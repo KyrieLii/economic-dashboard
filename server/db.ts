@@ -29,6 +29,9 @@ export async function initDb(): Promise<void> {
   initialized ??= db()
     .batch(
       [
+        `CREATE TABLE IF NOT EXISTS quote_cache (
+      metric_id TEXT PRIMARY KEY, payload TEXT, checked_at TEXT, error TEXT,
+      next_refresh_at INTEGER NOT NULL DEFAULT 0, owner TEXT)`,
         `CREATE TABLE IF NOT EXISTS custom_metrics (id TEXT PRIMARY KEY, definition TEXT NOT NULL, created_at TEXT NOT NULL)`,
         `CREATE TABLE IF NOT EXISTS observations (
       metric_id TEXT NOT NULL, date TEXT NOT NULL, value REAL NOT NULL, volume REAL,

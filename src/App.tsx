@@ -45,6 +45,7 @@ import {
   type HistoryData,
   type Summary,
 } from "../shared/model";
+import { displayedQuote, displayedChange, supportsQuote, type QuotesData } from "../shared/quotes";
 import { HistoryChart, Spark } from "./Chart";
 import { InfoTip } from "./InfoTip";
 import {
@@ -87,6 +88,24 @@ function timeLabel(value: string | null | undefined) {
         hour12: false,
       }).format(new Date(value))
     : t("尚未采集");
+}
+function quoteWarning(metric: Summary) {
+  if (!metric.quoteState) return null;
+  if (metric.quoteState.error) return t(metric.quoteState.error);
+  const checked = metric.quoteState.checkedAt;
+  if (!checked || Date.now() - Date.parse(checked) > 180000)
+    return t("报价待刷新");
+  return null;
+}
+function quoteNote(metric: Summary) {
+  if (!supportsQuote(metric)) return "";
+  const quote = displayedQuote(metric);
+  const warning = quoteWarning(metric);
+  return "\n" + (quote
+    ? t("当前报价：{0} · 北京时间（UTC+8）\n报价来源：{1}\n涨跌相对来源前收盘价；加密货币不代表滚动24小时涨跌。\n页面可见时每60秒检查报价，来源可能延迟；迷你图与详情曲线仍为已完成日线。",
+        timeLabel(quote.asOf), t(quote.source))
+    : t("暂未取得可用报价，当前显示已保存日线。")) +
+    (warning ? "\n" + warning : "");
 }
 function compact(value: number | null | undefined) {
   if (getLocale() === "en-US" && value != null)
@@ -318,8 +337,39 @@ export function App() {
       lastSuccess: null,
       error: null,
     }));
+  const quoteIds = [...new Set([...Object.values(currentLayout).flat(), ...(selected ? [selected] : [])])]
+    .filter(id => rawMetrics.some(m => m.id === id && supportsQuote(m))).sort();
+  const quotes = useQuery({
+    queryKey: ["quotes", quoteIds],
+    queryFn: async () => {
+      const batches = [];
+      for (let i = 0; i < quoteIds.length; i += 50) {
+        const params = new URLSearchParams({ ids: quoteIds.slice(i, i + 50).join(",") });
+        batches.push(getJson<QuotesData>(`/api/quotes?${params}`));
+      }
+      const results = await Promise.all(batches);
+      return { quotes: Object.assign({}, ...results.map(result => result.quotes)) } as QuotesData;
+    },
+    enabled: !!dashboard.data && quoteIds.length > 0,
+    staleTime: 50000,
+    refetchInterval: 60000,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
+  });
+  const refreshing = dashboard.isFetching || quotes.isFetching;
+  const refresh = () => {
+    void dashboard.refetch();
+    if (quoteIds.length) void quotes.refetch();
+  };
+  const quoteUpdatedAt = Object.values(quotes.data?.quotes || {})
+    .map(state => state.quote?.fetchedAt || "").sort().at(-1);
   const all = rawMetrics.map((metric) => ({
     ...metric,
+    quoteState: quotes.isError && supportsQuote(metric)
+      ? { quote: quotes.data?.quotes[metric.id]?.quote || null,
+          checkedAt: quotes.data?.quotes[metric.id]?.checkedAt || null,
+          error: "报价更新失败，保留上次数据" }
+      : quotes.data?.quotes[metric.id],
     searchTerms: `${metric.name} ${metric.englishName || ""} ${t(metric.name)}`,
     name: locale === "en" ? metric.englishName || t(metric.name) : metric.name,
     source: t(metric.source),
@@ -391,14 +441,14 @@ export function App() {
           <button
             className="icon-button refresh-button"
             aria-label={t("刷新看板")}
-            title={t("刷新看板 · 读取已保存数据")}
-            aria-busy={dashboard.isFetching}
-            disabled={dashboard.isFetching}
-            onClick={() => void dashboard.refetch()}
+            title={t("刷新报价与看板 · 报价缓存60秒")}
+            aria-busy={refreshing}
+            disabled={refreshing}
+            onClick={refresh}
           >
             <RefreshCw
               size={15}
-              className={dashboard.isFetching ? "spin" : ""}
+              className={refreshing ? "spin" : ""}
             />
           </button>
         </div>
@@ -575,7 +625,7 @@ export function App() {
               {t("暂时无法读取数据：")}
               {t(dashboard.error.message)}
             </span>
-            <button className="button" onClick={() => void dashboard.refetch()}>
+            <button className="button" onClick={refresh}>
               {t("重试")}
             </button>
           </div>
@@ -589,7 +639,7 @@ export function App() {
           <div className="notice">
             <Database size={18} />
             <span>
-              {t("尚未采集数据。运行 pnpm collect 后即可查看真实行情与历史。")}
+              {t("尚无日线历史。可用报价会自动更新，历史数据需要每日采集。")}
             </span>
           </div>
         )}
@@ -601,7 +651,7 @@ export function App() {
                 <InfoTip
                   label={t("采集规则")}
                   text={t(
-                    "日频参考数据，非实时行情。Vercel 每日约08:00、Docker 每日08:00和18:30采集（UTC+8）。加密货币按UTC已结束日线保存，涨跌不是滚动24小时变化。超过4天仅提示数据较早，不推断休市。",
+                    "页面可见时每60秒检查行情报价，来源可能延迟。历史曲线为已完成日线，Vercel每日约08:00、Docker每日08:00和18:30采集（UTC+8）。利率和全市场成交额按来源发布频率更新。",
                   )}
                 />
               </h2>
@@ -838,11 +888,11 @@ export function App() {
         <div
           className="update-watermark"
           title={t(
-            "最近采集时间 · 北京时间（UTC+8），各指标观测日期见 tooltip",
+            "最近取得报价或完成日线采集的时间 · 北京时间（UTC+8）；实际报价时刻见卡片 tooltip",
           )}
         >
           {t("更新于")}
-          {timeLabel(run?.finishedAt || run?.startedAt)}
+          {timeLabel([quoteUpdatedAt, run?.finishedAt].filter(Boolean).sort().at(-1))}
         </div>
       </main>
       {addGroup && draft && (
@@ -907,11 +957,8 @@ function MarketCard({
     onRemove: () => void;
   };
 }) {
-  const delta = change(
-    metric.latest?.value,
-    metric.previous?.value,
-    metric.rate,
-  );
+  const quote = displayedQuote(metric);
+  const delta = displayedChange(metric);
   return (
     <article
       className={`market-card ${metric.error ? "has-error" : ""} ${editor ? "editable" : ""} ${editor?.dragging ? "sort-placeholder" : ""}`}
@@ -964,20 +1011,18 @@ function MarketCard({
       >
         <span className="card-name">{metric.name}</span>
         <span className="card-quote">
-          <strong>{formatValue(metric.latest?.value, metric.precision)}</strong>
+          <strong>{formatValue(quote?.value ?? metric.latest?.value, metric.precision)}</strong>
           <small>{metric.unit}</small>
         </span>
         <span className="card-trend">
           <Delta value={delta} rate={metric.rate} />
           <Spark points={metric.spark} positive={(delta || 0) >= 0} />
         </span>
-        {(metric.error ||
-          !metric.latest ||
-          freshness(metric.latest.date) === "delayed") && (
-          <span className="card-meta">
-            <Status metric={metric} />
-          </span>
-        )}
+        {quoteWarning(metric) ? (
+          <span className="card-meta"><span className="status warn" title={quoteWarning(metric)!}>{t("报价待更新")}</span></span>
+        ) : !quote && (metric.error || !metric.latest || freshness(metric.latest.date) === "delayed") ? (
+          <span className="card-meta"><Status metric={metric} /></span>
+        ) : null}
       </button>
       <div className="card-actions">
         <InfoTip
@@ -988,7 +1033,7 @@ function MarketCard({
             metric.group === "加密货币" ? " UTC" : "",
             metric.source,
             metric.note,
-          )}
+          ) + quoteNote(metric)}
         />
         <button
           className={`icon-button favorite ${favorite ? "saved" : ""}`}
@@ -1099,11 +1144,8 @@ function Detail({
     enabled: !invalid,
   });
   const points = history.data?.points || [];
-  const delta = change(
-    metric.latest?.value,
-    metric.previous?.value,
-    metric.rate,
-  );
+  const quote = displayedQuote(metric);
+  const delta = displayedChange(metric);
   const rangeChange = change(
     points.at(-1)?.value,
     points[0]?.value,
@@ -1134,7 +1176,7 @@ function Detail({
               metric.unit,
               timeLabel(metric.lastSuccess),
               metric.firstDate || "尚未采集",
-            )}
+            ) + quoteNote(metric)}
           />
           <a
             className="icon-button"
@@ -1157,14 +1199,14 @@ function Detail({
         </div>
       </div>
       <div className="detail-value">
-        <strong>{formatValue(metric.latest?.value, metric.precision)}</strong>
+        <strong>{formatValue(quote?.value ?? metric.latest?.value, metric.precision)}</strong>
         <span>{metric.unit}</span>
       </div>
       <div className="detail-change">
         <Delta value={delta} rate={metric.rate} />
         <span>
-          {t("较前次观测")}
-          {metric.previous ? ` · ${metric.previous.date}` : ""}
+          {quote ? t("较前收盘价 · 当前报价") : t("较前次观测")}
+          {!quote && metric.previous ? ` · ${metric.previous.date}` : ""}
         </span>
       </div>
       <div className="period-toolbar">
@@ -1348,7 +1390,7 @@ function Detail({
             text={t(
               "展示区间内最近20条，完整记录可导出 CSV。累计历史始于 {0}。",
               metric.firstDate || "尚未采集",
-            )}
+            ) + quoteNote(metric)}
           />
         </div>
         <div className="history-rows">

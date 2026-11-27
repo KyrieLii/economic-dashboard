@@ -59,3 +59,7 @@ docker compose logs -f dashboard
 - [Turso定价](https://turso.tech/pricing)
 - [Turso SDK](https://docs.turso.tech/sdk/ts/reference)
 - [Hono Vercel](https://hono.dev/docs/getting-started/vercel)
+
+## 盘中报价与免费部署
+
+盘中报价由打开页面时的 `/api/quotes` 请求驱动，后端共享60秒缓存，不依赖分钟级Cron。Vercel Hobby日频Cron保持不变；页面关闭后不会持续采集盘中报价。此方案无需新增付费服务，但仍消耗函数调用、网络与数据库额度。Docker使用相同接口与缓存逻辑。`quote_cache` 迁移自动建表，只保存可重建的最新报价，不纳入历史备份。

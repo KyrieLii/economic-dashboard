@@ -1,3 +1,4 @@
+import type { QuoteState } from "./quotes.js";
 export type Group =
   "A股" | "美股" | "港股" | "大宗商品" | "汇率" | "利率与美债" | "加密货币";
 export interface Metric {
@@ -35,6 +36,7 @@ export interface Point extends Observation {
   source: string;
 }
 export interface Summary extends Metric {
+  quoteState?: QuoteState;
   searchTerms?: string;
   latest: Point | null;
   previous: Point | null;

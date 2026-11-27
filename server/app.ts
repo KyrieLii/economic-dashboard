@@ -7,6 +7,7 @@ import { searchStocks, registerStock, StockError } from "./stocks.js";
 import { isDate } from "../shared/model.js";
 import { db, databaseUrl, initDb } from "./db.js";
 import { readDashboard, toPoint } from "./store.js";
+import { readQuotes } from "./quotes.js";
 import { collect } from "./collect.js";
 
 export const app = new Hono();
@@ -32,6 +33,16 @@ app.get("/api/dashboard", async (c) => {
     generatedAt: new Date().toISOString(),
     storage: databaseUrl().startsWith("file:") ? "local" : "remote",
   });
+});
+app.get("/api/quotes", async (c) => {
+  const ids = [...new Set((c.req.query("ids") || "").split(",").filter(Boolean))];
+  if (!ids.length || ids.length > 50)
+    return c.json({ error: "每次报价查询需要1至50个已接入指标" }, 400);
+  await initDb();
+  const metrics = await allMetrics(db());
+  if (ids.some(id => !metrics.some(m => m.id === id)))
+    return c.json({ error: "未知指标" }, 400);
+  return c.json(await readQuotes(db(), metrics.filter(m => ids.includes(m.id))));
 });
 app.get("/api/history/:id", async (c) => {
   await initDb();
