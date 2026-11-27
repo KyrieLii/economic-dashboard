@@ -710,16 +710,44 @@ kbd {
   font-family: "JetBrains Mono Variable", monospace;
 }
 .chart-slider {
-  width: 100%;
-  height: 12px;
-  accent-color: var(--accent);
-  opacity: 0.6;
-  margin: 0;
+  --thumb-size: 16px;
+  appearance: none;
+  display: block;
+  box-sizing: border-box;
+  width: calc(100% - var(--plot-left) - var(--plot-right) + var(--thumb-size));
+  height: 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  margin: 0 0 0 calc(var(--plot-left) - var(--thumb-size) / 2);
   cursor: ew-resize;
 }
-.chart-slider:hover,
-.chart-slider:focus-visible {
-  opacity: 1;
+.chart-slider::-webkit-slider-runnable-track {
+  height: 4px;
+  background: linear-gradient(to right, transparent 8px, var(--rule) 8px, var(--rule) calc(100% - 8px), transparent calc(100% - 8px));
+}
+.chart-slider::-moz-range-track {
+  height: 4px;
+  background: linear-gradient(to right, transparent 8px, var(--rule) 8px, var(--rule) calc(100% - 8px), transparent calc(100% - 8px));
+}
+.chart-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: var(--thumb-size);
+  height: var(--thumb-size);
+  margin-top: -6px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.chart-slider::-moz-range-thumb {
+  width: var(--thumb-size);
+  height: var(--thumb-size);
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.chart-slider:disabled {
+  cursor: default;
 }
 .range-stats {
   display: grid;

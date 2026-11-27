@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type CSSProperties } from "react";
 import { formatValue, type Observation } from "../shared/model";
 
 export function Spark({
@@ -175,10 +175,18 @@ export function HistoryChart({
       </svg>
       <input
         className="chart-slider"
+        style={{
+          // A range thumb travels inside its own width. Extend each end by
+          // half the thumb so its center shares the SVG plot's x coordinates.
+          "--plot-left": `${left}px`,
+          "--plot-right": `${right}px`,
+        } as CSSProperties}
         type="range"
         min={0}
-        max={Math.max(points.length - 1, 0)}
-        value={current}
+        max={Math.max(points.length - 1, 1)}
+        step={points.length === 1 ? 0.5 : 1}
+        value={points.length === 1 ? 0.5 : current}
+        disabled={points.length === 1}
         onChange={(e) => setHover(Number(e.target.value))}
         aria-label="选择历史观测日期"
         aria-valuetext={`${points[current].date}，${points[current].value} ${unit}`}
