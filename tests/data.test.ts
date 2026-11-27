@@ -10,7 +10,7 @@ import {
   releaseLease,
   recordFailure,
 } from "../server/store";
-import { parseFred, parseYahoo } from "../server/providers";
+import { parseFred, parseYahoo, parseCrypto } from "../server/providers";
 import { change, dateInZone, isDate } from "../shared/model";
 import { latestScheduledSlot } from "../server/scheduler";
 import { app } from "../server/app";
@@ -219,4 +219,32 @@ test("optional read protection applies to dashboard and history", async () => {
   });
   assert.equal(result.status, 200);
   delete process.env.DASHBOARD_PASSWORD;
+});
+
+test("crypto uses completed UTC days, never intraday or unverified volume units", () => {
+  const now = new Date("2026-11-27T12:00:00Z");
+  const payload = {
+    chart: {
+      result: [
+        {
+          meta: {
+            exchangeTimezoneName: "UTC",
+            currentTradingPeriod: {
+              regular: { end: Date.parse("2026-11-27T00:00:00Z") / 1000 },
+            },
+          },
+          timestamp: [
+            Date.parse("2026-11-26T00:00:00Z") / 1000,
+            Date.parse("2026-11-27T00:00:00Z") / 1000,
+          ],
+          indicators: {
+            quote: [{ close: [60000, 61000], volume: [1000000, 2000000] }],
+          },
+        },
+      ],
+    },
+  };
+  assert.deepEqual(parseCrypto(payload, now), [
+    { date: "2026-11-26", value: 60000, volume: null },
+  ]);
 });

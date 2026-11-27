@@ -1,18 +1,26 @@
 export type Group =
-  "A股" | "美股" | "港股" | "大宗商品" | "汇率" | "利率与美债";
+  "A股" | "美股" | "港股" | "大宗商品" | "汇率" | "利率与美债" | "加密货币";
 export interface Metric {
   id: string;
   name: string;
   code: string;
   group: Group;
   unit: string;
-  provider: "yahoo" | "fred" | "nyfed" | "shibor" | "eastmoney" | "tencent";
+  provider:
+    | "yahoo"
+    | "fred"
+    | "nyfed"
+    | "shibor"
+    | "eastmoney"
+    | "tencent"
+    | "exchange";
   symbol: string;
   source: string;
   sourceUrl: string;
   note: string;
   rate?: boolean;
   volumeUnit?: string;
+  marketActivity?: boolean;
   precision: number;
 }
 export interface Observation {

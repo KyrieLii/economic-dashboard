@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { metrics } from "../shared/catalog";
 import { db, initDb } from "./db";
 import { fetchMetric } from "./providers";
+import { collectActivity } from "./market-activity";
 import {
   acquireLease,
   recordFailure,
@@ -15,6 +16,7 @@ export async function collect(ids?: string[], backfill = false) {
   const owner = await acquireLease(client);
   if (!owner) return { busy: true, successes: 0, failures: 0 };
   const id = randomUUID();
+  const deadline = Date.now() + 210000;
   let successes = 0,
     failures = 0;
   await client.execute({
@@ -28,7 +30,9 @@ export async function collect(ids?: string[], backfill = false) {
     const existing = new Map(
       counts.rows.map((row) => [String(row.metric_id), Number(row.n)]),
     );
-    const queue = metrics.filter((metric) => !ids || ids.includes(metric.id));
+    const queue = metrics.filter(
+      (metric) => !metric.marketActivity && (!ids || ids.includes(metric.id)),
+    );
     // Four network requests at a time; each has a bounded timeout.
     const worker = async () => {
       while (queue.length) {
@@ -59,6 +63,15 @@ export async function collect(ids?: string[], backfill = false) {
       }
     };
     await Promise.all(Array.from({ length: 4 }, worker));
+    if (!ids || metrics.some((m) => m.marketActivity && ids.includes(m.id))) {
+      const result = await collectActivity(
+        client,
+        backfill || !existing.get("a-turnover"),
+        deadline,
+      );
+      successes += result.successes;
+      failures += result.failures;
+    }
     await client.execute({
       sql: "UPDATE runs SET finished_at=?,successes=?,failures=?,status=? WHERE id=?",
       args: [

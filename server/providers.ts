@@ -69,6 +69,11 @@ export function parseYahoo(data: any, now = new Date()): Observation[] {
     ];
   });
 }
+export function parseCrypto(data: unknown, now = new Date()): Observation[] {
+  return parseYahoo(data, now)
+    .filter((point) => point.date < dateInZone(now, "UTC"))
+    .map((point) => ({ ...point, volume: null }));
+}
 export async function fetchMetric(
   metric: Metric,
   initial: boolean,
@@ -76,7 +81,10 @@ export async function fetchMetric(
   if (metric.provider === "yahoo") {
     const range = initial ? "5y" : "1mo";
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(metric.symbol)}?range=${range}&interval=1d`;
-    return parseYahoo(JSON.parse(await get(url)));
+    const payload = JSON.parse(await get(url));
+    return metric.group === "加密货币"
+      ? parseCrypto(payload)
+      : parseYahoo(payload);
   }
   if (metric.provider === "eastmoney") {
     const from = new Date();

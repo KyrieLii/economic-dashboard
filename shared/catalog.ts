@@ -44,10 +44,69 @@ const rate = (
   note,
   rate: true,
 });
+export const activityMetrics: Metric[] = [
+  [
+    "a-turnover",
+    "A股总成交额",
+    "沪深北",
+    "三所官方日度统计合计",
+    "https://www.sse.com.cn/market/stockdata/overview/day/",
+    "沪市主板A与科创板 + 深市主板A与创业板A + 北交所股票；不含B股、基金、债券和回购。同日三所数据齐全才合计。深市纯A股成交股数尚未核实，总成交量暂缺。",
+  ],
+  [
+    "hs-turnover",
+    "沪深A股成交额",
+    "沪深",
+    "沪深交易所官方日度统计",
+    "https://www.szse.cn/market/overview/index.html",
+    "沪市主板A与科创板 + 深市主板A与创业板A；不含北交所、B股、基金、债券和回购。同日两所数据齐全才合计。",
+  ],
+  [
+    "sh-turnover",
+    "沪市A股成交额",
+    "上交所",
+    "上交所 · 每日股票情况",
+    "https://www.sse.com.cn/market/stockdata/overview/day/",
+    "主板A（01）与科创板（03）相加，排除B股、回购。成交额原单位亿元，成交量原单位亿股；保留来源的两位小数精度。",
+  ],
+  [
+    "sz-turnover",
+    "深市A股成交额",
+    "深交所",
+    "深交所 · 证券类别统计",
+    "https://www.szse.cn/market/overview/index.html",
+    "主板A股与创业板A股成交金额相加，排除主板B股、基金和债券。深市日度概况的合计成交量含B股，暂不作为纯A股成交量使用。",
+  ],
+  [
+    "bj-turnover",
+    "北交所成交额",
+    "北交所",
+    "北交所 · 市场日报",
+    "https://www.bse.cn/static/statisticdata.html",
+    "北交所股票市场日报（xxzrlx=2），排除新三板。成交金额原单位元，成交数量原单位股；大宗交易附注不重复相加。",
+  ],
+].map(([id, name, code, source, sourceUrl, note]) => ({
+  id,
+  name,
+  code,
+  symbol: id,
+  source,
+  sourceUrl,
+  note,
+  group: "A股",
+  provider: "exchange",
+  unit: "亿元",
+  precision: 2,
+  marketActivity: true,
+  volumeUnit: "股",
+}));
 const catalog: Metric[] = [
+  ...activityMetrics,
   yahoo("sse", "上证指数", "000001.SS", "A股"),
+  yahoo("sse50", "上证50", "000016.SS", "A股"),
   yahoo("csi300", "沪深300", "000300.SS", "A股"),
   yahoo("csi500", "中证500", "000905.SS", "A股"),
+  yahoo("csi1000", "中证1000", "000852.SS", "A股"),
   yahoo("chinext", "创业板指", "399006.SZ", "A股"),
   yahoo("star50", "科创50", "000688.SS", "A股"),
   yahoo("sp500", "标普500", "^GSPC", "美股"),
@@ -56,6 +115,17 @@ const catalog: Metric[] = [
   yahoo("hsi", "恒生指数", "^HSI", "港股"),
   yahoo("hstech", "恒生科技", "HSTECH.HK", "港股"),
   yahoo("hscei", "恒生国企", "^HSCE", "港股"),
+  ...(
+    [
+      ["btc", "比特币 BTC", "BTC-USD"],
+      ["eth", "以太坊 ETH", "ETH-USD"],
+    ] as const
+  ).map(([id, name, symbol]) =>
+    yahoo(id, name, symbol, "加密货币", "美元", 2, {
+      code: id.toUpperCase(),
+      note: "Yahoo Finance 加密货币美元参考报价；按 UTC 日期保存已结束日线，排除当日未完成价格。日变化相对前一条日线，不是滚动24小时涨跌。成交字段单位未核实，不展示。",
+    }),
+  ),
   ...(
     [
       ["gold", "COMEX 黄金", "GC=F", "美元/盎司"],
@@ -141,6 +211,8 @@ const catalog: Metric[] = [
   ),
 ];
 const eastmoneySymbols: Record<string, string> = {
+  sse50: "1.000016",
+  csi1000: "1.000852",
   csi300: "1.000300",
   csi500: "1.000905",
   chinext: "0.399006",
@@ -179,5 +251,6 @@ export const groups: Group[] = [
   "大宗商品",
   "汇率",
   "利率与美债",
+  "加密货币",
 ];
 export const metricById = new Map(metrics.map((metric) => [metric.id, metric]));
