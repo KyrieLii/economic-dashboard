@@ -1,29 +1,31 @@
-# Economic Dashboard · 经济数据看板
+# Economic Dashboard
 
-**简体中文** | [English](README.en.md)
+**English** | [简体中文](README.zh-CN.md)
 
-一个页面观察 A 股、美股、港股、商品、汇率、利率与加密货币。保存真实历史，查看趋势、来源和修订。
+A single page for tracking mainland Chinese, US, and Hong Kong equities, commodities, exchange rates, interest rates, and cryptocurrencies. Keep historical observations and explore trends, sources, and revisions.
 
-## 已实现
+## Features
 
-- 内置34项指标（含5项独立市场成交额及BTC/ETH），六组紧凑卡片、点击抽屉详情、搜索、自选关注，红涨绿跌/绿涨红跌可切换。
-- 核心指标总览、历史曲线、指针/键盘查看观测值、区间变化与高低、市场成交统计。
-- 1个月、3个月、1年、全部、自选日期、CSV导出。
-- 真实日频采集、初次回填与增量更新；失败保留旧值，显示日期、错误与历史覆盖。
-- 按指标和日期去重；价格、成交量和来源修订留痕；数据库租约防止采集重叠。
-- Docker定时采集、Vercel Cron、数据库备份与空库恢复。
+- 34 built-in indicators, including five separate market-turnover series and BTC/ETH, organized into six compact card groups. Open a card for details, search indicators, manage favorites, and switch between red-up/green-down and green-up/red-down colors.
+- Historical charts with pointer and keyboard navigation, changes and highs/lows over the selected period, and market trading statistics.
+- One-month, three-month, one-year, full-history, and custom date ranges, with CSV export.
+- Daily data collection, initial backfills, and incremental updates. Collection failures retain saved history and show dates, errors, and available coverage.
+- Deduplication by indicator and date, revision tracking for values, volumes, and sources, and database leases to prevent overlapping collection runs.
+- Scheduled collection through Docker or Vercel Cron, database backups, and restoration into an empty database.
 
-卡片支持自定义添加、移除和排序；新增时搜索已接入指标。在“设置 → 编辑布局”中，拖动整张卡片会实时挤开后面的卡片；拖动组标题可调整分组顺序，拖到另一组底部可另起一行。也可用箭头与换行按钮操作，Esc 撤销当前拖动。点击“保存”将布局保存在当前浏览器，也可取消修改或恢复默认。
+Customize cards by adding, removing, and reordering them. Search connected indicators when adding a card. Save the layout in the current browser, cancel changes, or restore defaults. Observation dates are available in each card’s information tooltip.
 
-卡片固定宽度、左对齐，设置内可调节160–300px；非编辑态调宽立即保存，编辑态随布局一起保存或取消。观测日期位于卡片信息 tooltip 中；页面右下角半透明显示最近采集时间。
+Search A-shares (Shanghai, Shenzhen and Beijing), Hong Kong stocks, US stocks and crypto under Settings → Add, with market filters. Try `600519` / 茅台, `00700` / 腾讯, `AAPL` / 苹果, or `SOL` / Solana and `DOGE` / 狗狗币. `APEL` resolves to `AAPL`. Tracking backfills available history and joins daily collection. Up to 50 custom assets can be registered. Stocks use local exchange dates; crypto uses completed UTC daily bars, not live intraday quotes.
 
-“设置 → 新增”可按市场筛选、搜索 A 股（沪深北）、港股、美股及加密货币，例如 `600519` / 茅台、`00700` / 腾讯、`AAPL` / 苹果、`SOL` / Solana / 狗狗币。`APEL` 会纠正为 `AAPL`。首次追踪回填可用历史，之后随日频采集更新；最多登记50项自定义资产。股票按交易所日期归档，加密货币仅保存已完成UTC日线，不提供实时盘中报价。
+The language button immediately right of Settings switches Chinese / English. Language, layout and width are stored in the current browser’s localStorage and do not sync across devices. Asset definitions and history persist in SQLite / Turso; removing a card only hides it and preserves collection and history.
 
-设置右侧的语言按钮直接切换中文 / English，右侧三个图标保持紧凑间距。语言、卡片布局与宽度保存在当前浏览器的 localStorage，不跨设备同步；资产定义和历史保存在 SQLite / Turso。移除卡片仅隐藏展示，保留历史及采集。
+### Layout controls
 
-## 本地启动
+Open Settings → Edit layout to drag whole cards with live insertion, or drag a group heading to reorder groups. Drop near the bottom of another group to start a new row. Arrow and row-break buttons are available as keyboard alternatives; Escape cancels the current drag. Save, Cancel and Restore defaults cover card placement, group order, row breaks and width. Cards keep a fixed width and align left; Settings adjusts it from 160 to 300 px. Width changes outside editing save immediately in the current browser. The last collection time appears as translucent text at the bottom right.
 
-需要 Node.js 24 LTS、pnpm 11。
+## Run locally
+
+Requires Node.js 24 LTS and pnpm 11.
 
 ```sh
 pnpm install
@@ -32,56 +34,56 @@ pnpm collect
 pnpm dev
 ```
 
-Vite默认地址 `http://127.0.0.1:5173`，占用时自动换端口；API默认3001。初次访问无数据时显示空状态，不生成模拟行情。
+The frontend defaults to `http://127.0.0.1:5173` and selects another port if it is occupied. The API defaults to port 3001. An empty database shows an empty state; the application does not generate simulated market data.
 
 ```sh
-pnpm collect us10y sofr              # 指定指标补采
-pnpm collect csi300 --backfill       # 回填与修订复核
+pnpm collect us10y sofr              # Collect selected indicators
+pnpm collect csi300 --backfill       # Backfill and check for revisions
 pnpm test
 pnpm build
-pnpm start                          # 生产模式，默认3001端口
+pnpm start                          # Production server, port 3001 by default
 pnpm backup
-pnpm restore backups/<文件>.json     # 仅能恢复到空数据库
+pnpm restore backups/<file>.json     # Restore into an empty database only
 ```
 
-本地默认数据库 `file:data/economic.db`。如需代理，在 `.env` 设置 `DATA_PROXY_URL`。采集有失败时 CLI 返回非零状态，成功指标仍然入库。
+The default local database is `file:data/economic.db`. To use a proxy for collection, set `DATA_PROXY_URL` in `.env`. The collection command exits with a nonzero status if any collection fails; successfully collected indicators are still saved.
 
-## 部署
+## Deployment
 
-- **Vercel**：Vite静态前端 + Node Function + Turso。配置 `TURSO_DATABASE_URL`、`TURSO_AUTH_TOKEN`、`CRON_SECRET`。不能用函数本地文件保存持久历史。
+- **Vercel**: static frontend, Node Function, and Turso. Configure `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, and `CRON_SECRET`. Function-local files cannot provide persistent historical storage.
 
-详见[部署文档](docs/deployment.md)。未创建云数据库账号、配置云凭据或上线生产环境。
+See the [deployment guide](docs/deployment.md) (Chinese) for configuration and deployment verification limits.
 
-## 数据范围与限制
+## Data coverage and limitations
 
-[shared/catalog.ts](shared/catalog.ts) 是当前指标定义；[数据说明](docs/data-plan.md)记录接入情况。
+[shared/catalog.ts](shared/catalog.ts) defines the current indicators. The [data notes](docs/data-plan.md) (Chinese) document the integrations.
 
-2026-11-27本机验证：34/34项有真实数据，共29,721条观测。上证50、中证1000各回填727条，BTC、ETH各1,826条；加密货币按已完成的UTC日线记录，不表示滚动24小时涨跌。市场成交额5项各33个交易日（2026-10-14起）。其他指标历史约2–5年，以页面实际覆盖为准。数据库不会提交到Git，新部署需首次采集或恢复备份。
+Local verification on November 27, 2026: all 34 indicators have real data, totaling 29,721 observations. SSE 50 and CSI 1000 each have 727 observations; BTC and ETH each have 1,826. Cryptocurrency data uses completed UTC daily bars, so changes are not rolling 24-hour returns. Each of the five market-turnover series has 33 trading days starting October 14, 2026. Other series have roughly two to five years of history; actual coverage is shown in the application. The database is not committed to Git. New deployments require initial collection or restoration from a backup.
 
-- 日频而非实时行情；图表按观测顺序排列，不伪造休市数据。
-- 公开行情接口无可用性保证，变更时需维护适配器。
-- A股成交统计独立于指数：沪深北总成交额、沪深A股合计及三所分项，点击查看历史。来源为三所官方日度统计，排除B股、基金、债券和回购。
-- 总成交量（股数）暂缺：上交所与北交所股数已取得，深市纯A股股数仍待核实，不使用含B股的合计或指数成交量代替。
-- 商品为近月期货，换月可能产生跳变；区间变化不是可投资收益。
-- 利率变化以基点显示；EFFR是有效利率，不是政策目标区间。
-- 尚未接入LPR、政策目标区间、完整A股成交股数、ETF总回报及宏观日历。
-- 超过4天标为“较早数据”，是年龄提示，不是完整交易所日历判断。
+- Data is daily, not real-time. Charts follow observation order and do not fabricate values for market holidays.
+- Public data endpoints have no availability guarantee and may require adapter maintenance when they change.
+- A-share market trading statistics are separate from index data: combined Shanghai/Shenzhen/Beijing turnover, combined Shanghai/Shenzhen A-share turnover, and individual exchange series. They use official daily exchange statistics and exclude B shares, funds, bonds, and repos.
+- Total A-share trading volume in shares is not yet available. Shanghai and Beijing share counts are available, but Shenzhen's pure A-share count still needs verification. Totals that include B shares or index volumes are not used as substitutes.
+- Commodity series represent near-month futures. Contract rolls may cause price jumps; changes over a period are not investable returns.
+- Interest-rate changes use basis points. EFFR is the effective federal funds rate, not the policy target range.
+- LPR, policy target ranges, complete A-share trading volume, ETF total returns, and a macroeconomic calendar are not yet integrated.
+- Observations more than four days old are marked as older data. This is an age indicator, not a complete exchange-calendar check.
 
-## 项目结构
+## Project structure
 
-- `src/`：React单页、SVG图表、TanStack Query。
-- `shared/`：指标定义、类型与格式化。
-- `server/`：Hono API、数据源、存储、采集与调度。
-- `api/`：Vercel Node Function入口。
-- `scripts/`：采集、备份与恢复。
-- `tests/`：数据一致性、解析、调度与鉴权验证。
+- `src/`: single-page interface, SVG charts, and data queries.
+- `shared/`: indicator definitions, types, and formatting.
+- `server/`: API, data providers, storage, collection, and scheduling.
+- `api/`: Vercel Node Function entry point.
+- `scripts/`: collection, backup, and restoration utilities.
+- `tests/`: data consistency, parsing, scheduling, and authentication checks.
 
-`.env`、数据库、备份与日志均不提交Git。所有秘密仅在服务端使用，不设置 `VITE_` 前缀的秘密变量。
+`.env`, databases, backups, and logs are excluded from Git. Secrets are used only on the server; never prefix secret environment variables with `VITE_`.
 
-`DASHBOARD_PASSWORD` 保护行情读取、搜索和新增资产接口（HTTP Basic用户名 `viewer`）；静态页面和JS资源仍公开。未设置时任何访问者都能读取行情、搜索和登记资产，消耗共享采集与存储资源。公网部署应设置强密码并启用HTTPS；采集接口另由 `CRON_SECRET` 保护。当前为共享实例，没有用户隔离或请求限流。
+Set `DASHBOARD_PASSWORD` to protect market-data reads, search and asset registration with HTTP Basic authentication (username: `viewer`). Static pages and JavaScript remain public. Without it, any visitor can read data, search and register assets, consuming shared collection and storage resources. Use a strong password and HTTPS for internet deployments. Collection endpoints are protected separately by `CRON_SECRET`. This is a shared instance without per-user isolation or request rate limiting.
 
-## 许可证
+## License
 
-项目原创代码采用 [MIT License](LICENSE)。字体、图标及其他依赖遵循各自许可证，前端发行包附带[第三方许可声明](public/third-party-notices.txt)。
+Original project code is licensed under the [MIT License](LICENSE). Fonts, icons and other dependencies retain their own licenses; frontend distributions include [third-party notices](public/third-party-notices.txt).
 
-MIT 不授予行情数据的采集、商用或再分发权。数据仍受各来源及交易所条款约束；例如 [FRED](https://fred.stlouisfed.org/legal/) 对不同序列规定不同的版权与署名要求。公开托管行情或分发数据库前，应逐项确认数据授权。仓库不包含采集数据库或备份。参见[开源检查记录](docs/open-source.md)。
+MIT does not grant rights to collect, commercially use or redistribute market data. Provider and exchange terms still apply; for example, [FRED](https://fred.stlouisfed.org/legal/) specifies different copyright and attribution requirements by series. Confirm each source’s permissions before publicly hosting data or distributing a database. Collected databases and backups are not included in this repository. See the [open-source review](docs/open-source.md).
