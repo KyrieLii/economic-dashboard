@@ -295,3 +295,34 @@ test("partial search failures preserve usable results with a visible warning", a
   );
   agent.assertNoPendingInterceptors();
 });
+
+
+test("Vercel HTTPS origins survive TLS termination while cross-site registration stays blocked", async () => {
+  const previous = process.env.VERCEL;
+  process.env.VERCEL = "1";
+  const post = (origin: string, site = "same-origin", extra: Record<string, string> = {}) =>
+    app.request("http://dashboard.example/api/stocks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: origin, "Sec-Fetch-Site": site, ...extra },
+      body: JSON.stringify({ symbol: "BTC-USD" }),
+    });
+  try {
+    const sameOrigin = await post("https://dashboard.example");
+    assert.equal(sameOrigin.status, 200);
+    assert.equal((await sameOrigin.json()).metric.id, "btc");
+    assert.equal((await post("https://untrusted.example")).status, 403);
+    assert.equal((await post("https://untrusted.example", "same-origin", {
+      "X-Forwarded-Host": "untrusted.example", "X-Forwarded-Proto": "https",
+    })).status, 403);
+    assert.equal((await post("https://dashboard.example", "cross-site")).status, 403);
+    assert.equal((await post("http://dashboard.example")).status, 403);
+    assert.equal((await post("https://dashboard.example:8443")).status, 403);
+    assert.equal((await post("null")).status, 403);
+    delete process.env.VERCEL;
+    assert.equal((await post("https://dashboard.example")).status, 403);
+    assert.equal((await post("http://dashboard.example")).status, 200);
+  } finally {
+    if (previous === undefined) delete process.env.VERCEL;
+    else process.env.VERCEL = previous;
+  }
+});

@@ -110,6 +110,9 @@ app.get("/api/stocks/search", async (c) => {
 app.post("/api/stocks", async (c) => {
   const origin = c.req.header("Origin");
   const requestUrl = new URL(c.req.url);
+  // Vercel terminates HTTPS before forwarding HTTP to the Node adapter.
+  // Keep the actual request host; never trust caller-supplied forwarded hosts.
+  if (process.env.VERCEL === "1") requestUrl.protocol = "https:";
   let trustedOrigin = !origin || origin === requestUrl.origin;
   if (origin && !trustedOrigin) {
     try {
