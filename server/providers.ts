@@ -1,6 +1,6 @@
 import { fetch as httpFetch, ProxyAgent } from "undici";
-import type { Metric, Observation } from "../shared/model";
-import { dateInZone, isDate } from "../shared/model";
+import type { Metric, Observation } from "../shared/model.js";
+import { dateInZone, isDate } from "../shared/model.js";
 
 const proxy = process.env.DATA_PROXY_URL
   ? new ProxyAgent(process.env.DATA_PROXY_URL)

@@ -1,8 +1,8 @@
 import type { Client } from "@libsql/client";
-import type { Metric, StockCandidate, SearchMarket } from "../shared/model";
-import { metrics } from "../shared/catalog";
-import { get, parseYahoo, parseCrypto, fetchMetric } from "./providers";
-import { acquireLease, releaseLease, saveObservations } from "./store";
+import type { Metric, StockCandidate, SearchMarket } from "../shared/model.js";
+import { metrics } from "../shared/catalog.js";
+import { get, parseYahoo, parseCrypto, fetchMetric } from "./providers.js";
+import { acquireLease, releaseLease, saveObservations } from "./store.js";
 
 const usExchanges = new Set(["NMS", "NGM", "NCM", "NYQ", "ASE", "BTS", "PCX"]);
 export const validStockSymbol = (symbol: string) =>

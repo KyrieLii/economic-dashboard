@@ -1,8 +1,8 @@
 import type { Client } from "@libsql/client";
 import { fetch as httpFetch, ProxyAgent } from "undici";
-import { activityMetrics } from "../shared/catalog";
-import { dateInZone, isDate, type Observation } from "../shared/model";
-import { recordFailure, saveObservations } from "./store";
+import { activityMetrics } from "../shared/catalog.js";
+import { dateInZone, isDate, type Observation } from "../shared/model.js";
+import { recordFailure, saveObservations } from "./store.js";
 
 type Market = "sh" | "sz" | "bj";
 const proxy = process.env.DATA_PROXY_URL

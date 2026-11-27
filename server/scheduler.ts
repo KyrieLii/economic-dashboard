@@ -1,5 +1,5 @@
-import { db, initDb } from "./db";
-import { collect } from "./collect";
+import { db, initDb } from "./db.js";
+import { collect } from "./collect.js";
 
 export function latestScheduledSlot(now: Date): Date {
   // 08:00 and 18:30 in UTC+8; UTC avoids host timezone and DST surprises.

@@ -1,13 +1,13 @@
 import { randomUUID } from "node:crypto";
 import type { Client } from "@libsql/client";
-import { allMetrics } from "./registry";
+import { allMetrics } from "./registry.js";
 import {
   isDate,
   type Observation,
   type Point,
   type Run,
   type Summary,
-} from "../shared/model";
+} from "../shared/model.js";
 
 const writers = new WeakMap<Client, Promise<unknown>>();
 export function saveObservations(

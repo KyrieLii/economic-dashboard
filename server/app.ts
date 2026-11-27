@@ -2,12 +2,12 @@ import { Hono } from "hono";
 import { basicAuth } from "hono/basic-auth";
 import { HTTPException } from "hono/http-exception";
 import { timingSafeEqual } from "node:crypto";
-import { allMetrics } from "./registry";
-import { searchStocks, registerStock, StockError } from "./stocks";
-import { isDate } from "../shared/model";
-import { db, databaseUrl, initDb } from "./db";
-import { readDashboard, toPoint } from "./store";
-import { collect } from "./collect";
+import { allMetrics } from "./registry.js";
+import { searchStocks, registerStock, StockError } from "./stocks.js";
+import { isDate } from "../shared/model.js";
+import { db, databaseUrl, initDb } from "./db.js";
+import { readDashboard, toPoint } from "./store.js";
+import { collect } from "./collect.js";
 
 export const app = new Hono();
 app.use("/api/*", async (c, next) => {
@@ -100,7 +100,7 @@ app.get("/api/stocks/search", async (c) => {
     return c.json(
       await searchStocks(
         query,
-        market as import("../shared/model").SearchMarket,
+        market as import("../shared/model.js").SearchMarket,
       ),
     );
   } catch {

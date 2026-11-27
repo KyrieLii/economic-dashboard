@@ -1,14 +1,14 @@
 import { randomUUID } from "node:crypto";
-import { allMetrics } from "./registry";
-import { db, initDb } from "./db";
-import { fetchMetric } from "./providers";
-import { collectActivity } from "./market-activity";
+import { allMetrics } from "./registry.js";
+import { db, initDb } from "./db.js";
+import { fetchMetric } from "./providers.js";
+import { collectActivity } from "./market-activity.js";
 import {
   acquireLease,
   recordFailure,
   releaseLease,
   saveObservations,
-} from "./store";
+} from "./store.js";
 
 export async function collect(ids?: string[], backfill = false) {
   await initDb();

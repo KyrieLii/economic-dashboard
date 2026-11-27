@@ -44,7 +44,13 @@ docker compose logs -f dashboard
 
 ## 验证边界
 
-已验证本地采集、历史一致性、API、生产构建和浏览器交互。真实Turso连接、Vercel云端构建/Cron、极空间Docker运行需在部署时验证；当前没有线上实例。
+已验证本地采集、历史一致性、API、生产构建和浏览器交互。Vercel 云端构建已通过，首次上线的 API 启动异常已定位为 ESM 相对导入缺少扩展名。真实 Turso 连接、Vercel Cron 与极空间 Docker 运行仍需在部署时验证。
+
+## Vercel 函数启动排查
+
+若静态页面返回 200，而 `/api/health` 也出现 `FUNCTION_INVOCATION_FAILED`，先查看运行日志；健康检查不访问数据库。`ERR_MODULE_NOT_FOUND` 且路径指向 `server/app` 等本地模块时，检查 API、server 与 shared 中的相对导入是否使用 `.js` 扩展名。Vercel 编译后的 Node ESM 不会自动补齐扩展名。
+
+`pnpm typecheck` 包含后端 NodeNext 模块检查；`pnpm test` 会编译 API 并通过原生 Node 启动 HTTP 服务，验证健康检查及数据库配置缺失时的受控响应。本地 `tsx` 开发和打包构建通过，不能替代这项运行检查。
 
 ## 官方参考
 

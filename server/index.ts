@@ -1,8 +1,8 @@
 import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
-import { app } from "./app";
-import { startScheduler } from "./scheduler";
+import { app } from "./app.js";
+import { startScheduler } from "./scheduler.js";
 
 const server = new Hono();
 server.route("/", app);

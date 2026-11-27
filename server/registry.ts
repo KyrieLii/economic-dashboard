@@ -1,6 +1,6 @@
 import type { Client } from "@libsql/client";
-import { metrics } from "../shared/catalog";
-import type { Metric } from "../shared/model";
+import { metrics } from "../shared/catalog.js";
+import type { Metric } from "../shared/model.js";
 
 export async function registeredMetrics(client: Client): Promise<Metric[]> {
   const result = await client.execute(

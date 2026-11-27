@@ -10,9 +10,9 @@
   },
   "scripts": {
     "dev": "concurrently -k -n api,web 'tsx watch --env-file-if-exists=.env server/index.ts' 'vite --host 127.0.0.1'",
-    "build": "tsc --noEmit && vite build && esbuild server/index.ts --bundle --platform=node --format=esm --packages=external --outfile=build/server.js",
+    "build": "pnpm typecheck && vite build && esbuild server/index.ts --bundle --platform=node --format=esm --packages=external --outfile=build/server.js",
     "start": "node --env-file-if-exists=.env build/server.js",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.server.json",
     "test": "tsx --test tests/*.test.ts",
     "collect": "tsx --env-file-if-exists=.env scripts/collect.ts",
     "backup": "tsx --env-file-if-exists=.env scripts/backup.ts",

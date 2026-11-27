@@ -1,4 +1,4 @@
-import type { Group, Metric } from "./model";
+import type { Group, Metric } from "./model.js";
 
 const yahoo = (
   id: string,
