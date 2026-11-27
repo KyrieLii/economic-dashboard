@@ -4,6 +4,8 @@
 
 在一个页面查看 A 股、美股、港股、大宗商品、汇率、利率和加密货币行情，保存历史数据，追踪趋势并查阅数据来源与修订记录。
 
+[![一键部署到 Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FKyrieLii%2Feconomic-dashboard&env=TURSO_DATABASE_URL,TURSO_AUTH_TOKEN,CRON_SECRET&envDescription=Enter%20your%20Turso%20database%20URL%20and%20auth%20token%2C%20plus%20a%20random%20secret%20for%20scheduled%20collection.&envLink=https%3A%2F%2Fgithub.com%2FKyrieLii%2Feconomic-dashboard%2Fblob%2Fmain%2Fdocs%2Fdeployment.md%23vercel--turso)
+
 ## 功能
 
 - 内置 34 项指标，包含 5 项市场成交额指标及 BTC、ETH，按六组卡片展示。支持搜索、关注，以及红涨绿跌 / 绿涨红跌切换。
@@ -58,6 +60,8 @@ pnpm restore backups/<文件>.json     # 仅支持恢复到空数据库
 本地数据库默认位于 `file:data/economic.db`。如需通过代理采集数据，在 `.env` 中设置 `DATA_PROXY_URL`。任一指标采集失败时，命令会以非零状态退出，已成功采集的数据仍会保存。
 
 ## 部署
+
+点击上方 **Deploy with Vercel** 按钮，即可复制仓库并创建自己的部署。请先创建 Turso 数据库；部署页面会要求填写 `TURSO_DATABASE_URL`、`TURSO_AUTH_TOKEN` 和 `CRON_SECRET`（可用 `openssl rand -hex 32` 生成）。部署完成后，按[部署文档](docs/deployment.md#vercel--turso)执行首次采集。
 
 - **Vercel**：静态前端 + Node Function + Turso。需配置 `TURSO_DATABASE_URL`、`TURSO_AUTH_TOKEN` 和 `CRON_SECRET`，不能依赖函数的本地文件持久保存历史数据。
 

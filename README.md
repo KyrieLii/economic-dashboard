@@ -4,6 +4,8 @@
 
 A single page for tracking mainland Chinese, US, and Hong Kong equities, commodities, exchange rates, interest rates, and cryptocurrencies. Keep historical observations and explore trends, sources, and revisions.
 
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FKyrieLii%2Feconomic-dashboard&env=TURSO_DATABASE_URL,TURSO_AUTH_TOKEN,CRON_SECRET&envDescription=Enter%20your%20Turso%20database%20URL%20and%20auth%20token%2C%20plus%20a%20random%20secret%20for%20scheduled%20collection.&envLink=https%3A%2F%2Fgithub.com%2FKyrieLii%2Feconomic-dashboard%2Fblob%2Fmain%2Fdocs%2Fdeployment.md%23vercel--turso)
+
 ## Features
 
 - Current quotes for supported indices, stocks, crypto, commodities and exchange rates, checked every 60 seconds while the page is visible. SSE 50 and CSI 500 show source prices and changes from the previous close during trading. Hover the information icon for the actual quote timestamp and source; providers may delay quotes.
@@ -57,6 +59,8 @@ Opening the dashboard requests quotes only for cards in the current layout and t
 Quotes include the provider's observation time, retrieval time, source and previous close. Failure retains the last quote with a warning, or falls back to saved daily data if no usable quote exists. Interest rates, Treasury yield series and exchange-wide turnover remain publication-based daily data. Refresh frequency does not guarantee exchange-level real time. Quote caching uses normal Function and database quotas and requires no additional scheduled job. `quote_cache` contains disposable latest snapshots, not a minute-by-minute archive, and is not included in history backups.
 
 ## Deployment
+
+Use the **Deploy with Vercel** button above to clone this repository and create your own deployment. Create a Turso database first; the setup will ask for `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, and `CRON_SECRET` (generate one with `openssl rand -hex 32`). After deployment, run the initial collection as described in the [deployment guide](docs/deployment.md#vercel--turso).
 
 - **Vercel**: static frontend, Node Function, and Turso. Configure `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, and `CRON_SECRET`. Function-local files cannot provide persistent historical storage.
 
