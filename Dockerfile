@@ -13,6 +13,7 @@ COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/build ./build
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/package.json ./package.json
+COPY --from=build /app/LICENSE ./LICENSE
 RUN mkdir /app/data && chown -R node:node /app/data
 USER node
 EXPOSE 3001
