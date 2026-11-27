@@ -143,7 +143,7 @@ function Status({ metric }: { metric: Summary }) {
   if (metric.error)
     return (
       <span className="status warn" title={t(metric.error)}>
-        {t("采集异常")}
+        {t(metric.error.startsWith("历史补采未完整") ? "历史待补齐" : "采集异常")}
       </span>
     );
   if (!metric.latest)
@@ -1033,7 +1033,7 @@ function MarketCard({
             metric.group === "加密货币" ? " UTC" : "",
             metric.source,
             metric.note,
-          ) + quoteNote(metric)}
+          ) + quoteNote(metric) + (metric.error ? "\n" + t(metric.error) : "")}
         />
         <button
           className={`icon-button favorite ${favorite ? "saved" : ""}`}

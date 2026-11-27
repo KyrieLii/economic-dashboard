@@ -198,64 +198,108 @@ async function fetchDay(
   if (!match) throw new Error("北交所格式异常");
   return parseBeijing(JSON.parse(match[1]), date);
 }
+const activityIds = [
+  "sh-turnover", "sz-turnover", "bj-turnover", "hs-turnover", "a-turnover",
+];
+const dependencies: Market[][] = [["sh"], ["sz"], ["bj"], ["sh", "sz"], ["sh", "sz", "bj"]];
+const exchangeNames: Record<Market, string> = { sh: "SSE", sz: "SZSE", bj: "BSE" };
+function failureKind(error: unknown): string {
+  const message = error instanceof Error ? error.message : "";
+  if (/timeout|aborted|超时/i.test(message)) return "timeout";
+  const http = /HTTP (\d{3})/.exec(message);
+  if (http) return `HTTP ${http[1]}`;
+  if (/fetch failed|ECONN|socket/i.test(message)) return "network";
+  return "invalid-response";
+}
+function retryable(error: unknown) {
+  return /timeout|aborted|fetch failed|ECONN|socket|HTTP (408|429|5\d\d)/i.test(
+    error instanceof Error ? error.message : "",
+  );
+}
+
 export async function collectActivity(
   client: Client,
   initial: boolean,
   deadline: number,
+  options: { now?: Date; fetchDay?: typeof fetchDay } = {},
 ) {
+  const now = options.now || new Date();
+  const historyDates = activityDates(true, now);
+  const recentDates = activityDates(false, now);
+  // A partial first backfill must not permanently shrink the retry window to ten
+  // days. Revisit gaps evidenced by another exchange or an existing total.
+  const stored = await client.execute({
+    sql: `SELECT metric_id,date FROM observations WHERE metric_id IN (${activityIds.map(() => "?").join(",")}) AND date>=?`,
+    args: [...activityIds, historyDates.at(-1)!],
+  });
+  const coverage = new Map<string, Set<string>>();
+  for (const row of stored.rows) {
+    const date = String(row.date);
+    const ids = coverage.get(date) || new Set<string>();
+    ids.add(String(row.metric_id));
+    coverage.set(date, ids);
+  }
+  const dates = initial ? historyDates : historyDates.filter(date =>
+    recentDates.includes(date) || (coverage.has(date) && coverage.get(date)!.size < activityIds.length),
+  );
   const data: Record<Market, Observation[]> = { sh: [], sz: [], bj: [] };
-  const errors = new Set<Market>();
-  const dates = activityDates(initial);
-  // Three independent exchange requests at most. A failing source stops its own
-  // loop, while the other exchanges can still save their valid history.
+  const errors: Record<Market, Map<string, string>> = { sh: new Map(), sz: new Map(), bj: new Map() };
+  const fetch = options.fetchDay || fetchDay;
   await Promise.all(
     (["sh", "sz", "bj"] as Market[]).map(async (market) => {
       const get = session(market, deadline);
-      for (const date of dates) {
-        try {
-          const point = await fetchDay(market, date, get);
-          if (point) data[market].push(point);
-        } catch {
-          errors.add(market);
+      let consecutiveFailures = 0;
+      for (const [index, date] of dates.entries()) {
+        if (Date.now() >= deadline || consecutiveFailures >= 3) {
+          const reason = Date.now() >= deadline ? "deadline" : "source-unavailable";
+          for (const remaining of dates.slice(index)) errors[market].set(remaining, reason);
           break;
+        }
+        try {
+          let point: Observation | null;
+          try {
+            point = await fetch(market, date, get);
+          } catch (error) {
+            if (!retryable(error) || Date.now() + 250 >= deadline) throw error;
+            await new Promise(resolve => setTimeout(resolve, 200));
+            point = await fetch(market, date, get);
+          }
+          if (point) data[market].push(point);
+          consecutiveFailures = 0;
+        } catch (error) {
+          errors[market].set(date, failureKind(error));
+          consecutiveFailures++;
+          console.error(`[activity] ${market} ${date}: ${failureKind(error)}`);
+          // An isolated date failure must not discard all older available dates.
         }
       }
     }),
   );
   const results = [
-    data.sh,
-    data.sz,
-    data.bj,
+    data.sh, data.sz, data.bj,
     sumMarkets([data.sh, data.sz]),
     sumMarkets([data.sh, data.sz, data.bj]),
   ];
-  const ids = [
-    "sh-turnover",
-    "sz-turnover",
-    "bj-turnover",
-    "hs-turnover",
-    "a-turnover",
-  ];
-  const dependencies: Market[][] = [
-    ["sh"],
-    ["sz"],
-    ["bj"],
-    ["sh", "sz"],
-    ["sh", "sz", "bj"],
-  ];
-  let successes = 0,
-    failures = 0;
-  for (let i = 0; i < ids.length; i++) {
-    const metric = activityMetrics.find((m) => m.id === ids[i])!;
+  const latestObserved = Object.values(data).flat().map(p => p.date).sort().at(-1);
+  let successes = 0, failures = 0;
+  for (const [i, id] of activityIds.entries()) {
+    const metric = activityMetrics.find(m => m.id === id)!;
     if (results[i].length)
       await saveObservations(client, metric.id, metric.source, results[i]);
-    if (!results[i].length || dependencies[i].some((m) => errors.has(m))) {
+    const missing = dependencies[i].flatMap(market =>
+      [...errors[market]].map(([date, reason]) => ({ market, date, reason })),
+    );
+    const latest = results[i].map(p => p.date).sort().at(-1);
+    const incompleteLatest = !latest || (latestObserved && latest < latestObserved) ||
+      missing.some(item => item.date >= latest);
+    if (missing.length || incompleteLatest) {
       failures++;
-      await recordFailure(
-        client,
-        metric.id,
-        "交易所统计未完整取得；保留已存历史，等待下次补采",
-      );
+      const details = missing.slice(0, 3).map(item =>
+        `${exchangeNames[item.market]} ${item.date} [${item.reason}]`,
+      ).join(", ") + (missing.length > 3 ? ` … (+${missing.length - 3})` : "");
+      await recordFailure(client, metric.id, incompleteLatest
+        ? `交易所最新统计未完整取得；保留已存历史。未完成：${details || latestObserved || dates[0]}`
+        : `历史补采未完整；最新统计已保存（${latest}）。未完成：${details}`);
     } else successes++;
   }
   return { successes, failures };

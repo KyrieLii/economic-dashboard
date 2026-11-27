@@ -5,7 +5,7 @@
 1. 在Turso创建兼容libSQL的数据库，取得URL（通常 `libsql://...`）和授权令牌。
 2. Vercel导入 `KyrieLii/economic-dashboard`，选Vite，根目录保持仓库根目录。Node.js选24；安装命令 `pnpm install --frozen-lockfile`；构建 `pnpm build`；输出 `dist`。
 3. Production环境设置 `TURSO_DATABASE_URL`、`TURSO_AUTH_TOKEN`、`CRON_SECRET`。密钥可用 `openssl rand -hex 32` 生成；`DASHBOARD_PASSWORD` 保护行情读取、搜索和新增资产，用户名 `viewer`；公网部署应设置强密码并使用HTTPS。未设置时任何访问者均可登记资产；当前不提供用户隔离或请求限流。
-4. 部署后数据库表会自动初始化，尚未采集时页面显示空状态。
+4. 使用Vercel Marketplace的Turso连接时，检查“Create Database Branch For Deployment”：Production必须关闭，Preview可保留分支隔离。否则每次生产部署可能从主库新建独立副本，线上新增资产和采集结果不会自动回到主库。修改连接后重新部署才会生效。数据库表会自动初始化，尚未采集时页面显示空状态。
 5. 首次采集：本地配置Turso环境变量并运行 `pnpm collect`；或由运维客户端请求 `/api/cron`，带 `Authorization: Bearer <CRON_SECRET>`。不要在网页输入管理密钥。
 6. `vercel.json` 配置每日UTC `0 0 * * *`（北京时间约08:00）。Vercel自动发送CRON_SECRET。Hobby执行不保证精确到分钟，也不保证自动重试。
 

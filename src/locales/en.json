@@ -302,5 +302,8 @@
   "较前收盘价 · 当前报价": "vs. previous close · current quote",
   "页面可见时每60秒检查行情报价，来源可能延迟。历史曲线为已完成日线，Vercel每日约08:00、Docker每日08:00和18:30采集（UTC+8）。利率和全市场成交额按来源发布频率更新。": "Quotes are checked every 60 seconds while the page is visible and may be delayed. Charts use completed daily bars, collected around 08:00 on Vercel and 08:00 / 18:30 on Docker (UTC+8). Rates and market-wide turnover follow their sources’ publication schedules.",
   "每次报价查询需要1至50个已接入指标": "Request between 1 and 50 registered indicators per quote query",
-  "尚无日线历史。可用报价会自动更新，历史数据需要每日采集。": "No daily history yet. Available quotes refresh automatically; historical data requires daily collection."
+  "尚无日线历史。可用报价会自动更新，历史数据需要每日采集。": "No daily history yet. Available quotes refresh automatically; historical data requires daily collection.",
+  "历史待补齐": "History incomplete",
+  "历史补采未完整；最新统计已保存（{0}）。未完成：{1}": "Historical backfill incomplete; latest statistics saved ({0}). Pending: {1}",
+  "交易所最新统计未完整取得；保留已存历史。未完成：{0}": "Latest exchange statistics incomplete; saved history retained. Pending: {0}"
 }
