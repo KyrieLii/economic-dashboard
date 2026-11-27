@@ -8,9 +8,9 @@ A single page for tracking mainland Chinese, US, and Hong Kong equities, commodi
 
 ## Demo
 
-[![Economic Dashboard video preview](docs/assets/economic-dashboard-demo.jpg)](docs/assets/economic-dashboard-demo.mp4)
+https://github.com/user-attachments/assets/1738b7c5-7ef6-4dd3-a8ba-1e68dad73481
 
-[Watch the 30-second demo](docs/assets/economic-dashboard-demo.mp4) — market overview, historical charts, asset search, layout editing, and language switching. Chinese narration and captions; 1080p.
+30-second demo: market overview, historical charts, asset search, layout editing, and language switching. Chinese narration and captions; 1080p. [Download MP4](docs/assets/economic-dashboard-demo.mp4).
 
 ## Features
 

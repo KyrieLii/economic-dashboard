@@ -8,9 +8,9 @@
 
 ## 使用演示
 
-[![Economic Dashboard 使用视频预览](docs/assets/economic-dashboard-demo.jpg)](docs/assets/economic-dashboard-demo.mp4)
+https://github.com/user-attachments/assets/1738b7c5-7ef6-4dd3-a8ba-1e68dad73481
 
-[观看 30 秒使用视频](docs/assets/economic-dashboard-demo.mp4)：介绍市场总览、历史走势、资产搜索、布局编辑和语言切换。中文配音与字幕，1080p。
+30 秒介绍市场总览、历史走势、资产搜索、布局编辑和语言切换。中文配音与字幕，1080p。[下载 MP4](docs/assets/economic-dashboard-demo.mp4)。
 
 ## 功能
 
