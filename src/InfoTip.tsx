@@ -1,3 +1,4 @@
+import { t } from "./i18n";
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Info } from "lucide-react";
@@ -78,7 +79,7 @@ export function InfoTip({ label, text }: { label: string; text: string }) {
         ref={trigger}
         type="button"
         className="icon-button info-trigger"
-        aria-label={label}
+        aria-label={t(label)}
         aria-describedby={open ? id : undefined}
         onMouseEnter={show}
         onMouseLeave={hide}
@@ -102,7 +103,7 @@ export function InfoTip({ label, text }: { label: string; text: string }) {
             onMouseEnter={show}
             onMouseLeave={hide}
           >
-            {text}
+            {t(text)}
           </div>,
           trigger.current?.closest("dialog") || document.body,
         )}

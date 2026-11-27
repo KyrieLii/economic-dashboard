@@ -5,7 +5,7 @@ import { dateInZone, isDate } from "../shared/model";
 const proxy = process.env.DATA_PROXY_URL
   ? new ProxyAgent(process.env.DATA_PROXY_URL)
   : undefined;
-async function get(url: string): Promise<string> {
+export async function get(url: string): Promise<string> {
   const response = await httpFetch(url, {
     dispatcher: proxy,
     signal: AbortSignal.timeout(12000),
@@ -103,6 +103,11 @@ export async function fetchMetric(
         `https://push2his.eastmoney.com/api/qt/stock/kline/get?${params}`,
       ),
     );
+    if (
+      metric.id.startsWith("stock-") &&
+      json.data?.code !== metric.code.split(".")[0]
+    )
+      throw new Error("日线资产代码不匹配");
     if (!Array.isArray(json.data?.klines))
       throw new Error("东方财富未返回日线");
     const today = dateInZone(new Date(), "Asia/Shanghai");
@@ -125,7 +130,9 @@ export async function fetchMetric(
           date,
           value: Number(rawClose),
           volume:
-            metric.group === "汇率" || Number(rawVolume) <= 0
+            metric.group === "汇率" ||
+            (metric.id.startsWith("stock-") && !metric.volumeUnit) ||
+            Number(rawVolume) <= 0
               ? null
               : Number(rawVolume),
         },

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { Client } from "@libsql/client";
-import { metrics } from "../shared/catalog";
+import { allMetrics } from "./registry";
 import {
   isDate,
   type Observation,
@@ -139,7 +139,7 @@ export async function readDashboard(client: Client) {
   const counts = new Map(
     results[1].rows.map((row) => [String(row.metric_id), row]),
   );
-  const summaries: Summary[] = metrics.map((metric) => {
+  const summaries: Summary[] = (await allMetrics(client)).map((metric) => {
     const points = results[0].rows
       .filter((row) => row.metric_id === metric.id)
       .map(toPoint);

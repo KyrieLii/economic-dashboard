@@ -8,7 +8,10 @@ if (!file)
   );
 const backup = JSON.parse(await readFile(file, "utf8"));
 if (backup.schema !== 1 || !backup.tables) throw new Error("不支持的备份格式");
+// Older backups predate user-added stocks.
+backup.tables.custom_metrics ??= [];
 const columns: Record<string, string[]> = {
+  custom_metrics: ["id", "definition", "created_at"],
   observations: [
     "metric_id",
     "date",

@@ -1,4 +1,12 @@
-import { useEffect, useRef, useState } from "react";
+import { t, useLocale, setLocale, getLocale } from "./i18n";
+import {
+  Fragment,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent,
+} from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Activity,
@@ -6,6 +14,14 @@ import {
   ArrowUp,
   ChevronDown,
   CircleAlert,
+  Plus,
+  Pencil,
+  Check,
+  RotateCcw,
+  ArrowLeft,
+  ArrowRight,
+  GripVertical,
+  Trash2,
   Database,
   Download,
   ExternalLink,
@@ -13,6 +29,8 @@ import {
   RefreshCw,
   Search,
   SlidersHorizontal,
+  Settings,
+  Languages,
   Star,
   X,
 } from "lucide-react";
@@ -29,7 +47,20 @@ import {
 } from "../shared/model";
 import { HistoryChart, Spark } from "./Chart";
 import { InfoTip } from "./InfoTip";
-
+import {
+  boardGroups,
+  defaultLayout,
+  normalizeLayout,
+  placeCard,
+  layoutKey,
+  boardKey,
+  normalizePreferences,
+  placeGroup,
+  type BoardPreferences,
+  type BoardLayout,
+} from "./board-layout";
+import { useBoardDrag } from "./useBoardDrag";
+import { AddCardDialog } from "./BoardEditor";
 async function getJson<T>(url: string): Promise<T> {
   const response = await fetch(url);
   if (!response.ok) {
@@ -47,7 +78,7 @@ function readSaved<T>(key: string, initial: T): T {
 }
 function timeLabel(value: string | null | undefined) {
   return value
-    ? new Intl.DateTimeFormat("zh-CN", {
+    ? new Intl.DateTimeFormat(getLocale(), {
         timeZone: "Asia/Shanghai",
         month: "2-digit",
         day: "2-digit",
@@ -55,9 +86,14 @@ function timeLabel(value: string | null | undefined) {
         minute: "2-digit",
         hour12: false,
       }).format(new Date(value))
-    : "尚未采集";
+    : t("尚未采集");
 }
 function compact(value: number | null | undefined) {
+  if (getLocale() === "en-US" && value != null)
+    return new Intl.NumberFormat("en-US", {
+      notation: "compact",
+      maximumFractionDigits: 2,
+    }).format(value);
   return value == null
     ? "—"
     : value >= 1e8
@@ -87,78 +123,32 @@ function Delta({
 function Status({ metric }: { metric: Summary }) {
   if (metric.error)
     return (
-      <span className="status warn" title={metric.error}>
-        采集异常
+      <span className="status warn" title={t(metric.error)}>
+        {t("采集异常")}
       </span>
     );
-  if (!metric.latest) return <span className="status muted">待采集</span>;
+  if (!metric.latest)
+    return <span className="status muted">{t("待采集")}</span>;
   if (freshness(metric.latest.date) === "delayed")
     return (
       <span
         className="status warn"
-        title="距观测日期已超过4天；可能为休市、发布滞后或来源延迟"
+        title={t("距观测日期已超过4天；可能为休市、发布滞后或来源延迟")}
       >
-        较早数据
+        {t("较早数据")}
       </span>
     );
   return null;
 }
-const boardGroups = [
-  {
-    id: "a",
-    name: "A 股",
-    groups: ["A股"],
-    primary: [
-      "a-turnover",
-      "sse50",
-      "csi300",
-      "csi500",
-      "csi1000",
-      "chinext",
-      "star50",
-    ],
-  },
-  {
-    id: "us",
-    name: "美股 / 美元",
-    groups: ["美股", "汇率"],
-    primary: ["nasdaq", "sp500", "usdcny", "usdcnh"],
-  },
-  {
-    id: "hk",
-    name: "港股",
-    groups: ["港股"],
-    primary: ["hsi", "hstech", "hscei"],
-  },
-  {
-    id: "commodities",
-    name: "黄金 / 布油",
-    groups: ["大宗商品"],
-    primary: ["gold", "brent"],
-  },
-  {
-    id: "crypto",
-    name: "加密货币",
-    groups: ["加密货币"],
-    primary: ["btc", "eth"],
-  },
-  {
-    id: "rates",
-    name: "利率 / 美债",
-    groups: ["利率与美债"],
-    primary: [
-      "us2y",
-      "us10y",
-      "us30y",
-      "sofr",
-      "effr",
-      "shibor-on",
-      "shibor-1w",
-    ],
-  },
-];
-
 export function App() {
+  const locale = useLocale();
+  useEffect(() => {
+    document.documentElement.lang = locale;
+    document.title =
+      locale === "en"
+        ? "Economic Dashboard"
+        : "Economic Dashboard · 经济数据看板";
+  }, [locale]);
   const dashboard = useQuery({
     queryKey: ["dashboard"],
     queryFn: () => getJson<DashboardData>("/api/dashboard"),
@@ -176,10 +166,126 @@ export function App() {
     ]),
   );
   const [watchOnly, setWatchOnly] = useState(false);
-  const [expanded, setExpanded] = useState<string[]>([]);
+  const [layout, setLayout] = useState(() =>
+    normalizeLayout(
+      readSaved<{
+        layout?: unknown;
+      }>(boardKey, {}).layout ?? readSaved(layoutKey, null),
+    ),
+  );
+  const [draft, setDraft] = useState<BoardLayout | null>(null);
+  const [addGroup, setAddGroup] = useState<string | null>(null);
+  const [preferences, setPreferences] = useState(() =>
+    normalizePreferences(
+      readSaved<{
+        preferences?: unknown;
+      }>(boardKey, {}).preferences,
+    ),
+  );
+  const [draftPreferences, setDraftPreferences] =
+    useState<BoardPreferences | null>(null);
+  const currentPreferences = draftPreferences || preferences;
+  const [layoutError, setLayoutError] = useState("");
+  const [announcement, setAnnouncement] = useState("");
+  const editing = draft !== null;
+  const currentLayout = draft || layout;
+  const startEditing = () => {
+    setDraft(layout);
+    setDraftPreferences(preferences);
+    setSearch("");
+    setWatchOnly(false);
+    setLayoutError("");
+  };
+  const saveLayout = () => {
+    if (!draft) return;
+    try {
+      localStorage.setItem(
+        boardKey,
+        JSON.stringify({ layout: draft, preferences: currentPreferences }),
+      );
+      setPreferences(currentPreferences);
+      setDraftPreferences(null);
+      setLayout(draft);
+      setDraft(null);
+      setLayoutError("");
+      setAnnouncement("看板布局已保存");
+    } catch {
+      setLayoutError(
+        "无法保存到此浏览器，请允许本地存储后重试。当前修改仍保留。 ",
+      );
+    }
+  };
+  const moveCard = (id: string, group: string, position: number) => {
+    setDraft((old) => (old ? placeCard(old, id, group, position) : old));
+    setAnnouncement(`${catalog.find((m) => m.id === id)?.name}已移动`);
+  };
+  const changeWidth = (width: number) => {
+    const next = { ...currentPreferences, width };
+    if (editing) setDraftPreferences(next);
+    else {
+      try {
+        localStorage.setItem(
+          boardKey,
+          JSON.stringify({ layout, preferences: next }),
+        );
+        setPreferences(next);
+        setLayoutError("");
+      } catch {
+        setLayoutError("无法保存卡片宽度，请允许本地存储后重试。");
+      }
+    }
+  };
+  const drag = useBoardDrag(
+    (moving, x, y) => {
+      const element = document.elementFromPoint(x, y);
+      const groupElement = element?.closest<HTMLElement>(
+        ".market-groups [data-group]",
+      );
+      if (!groupElement) return;
+      const targetGroup = groupElement.dataset.group!;
+      if (moving.kind === "group") {
+        if (moving.id === targetGroup) return;
+        const rect = groupElement.getBoundingClientRect();
+        const newRow = y > rect.bottom - 24;
+        const after = newRow || x > rect.left + rect.width / 2;
+        setDraftPreferences((old) =>
+          old ? placeGroup(old, moving.id, targetGroup, after, newRow) : old,
+        );
+      } else {
+        const card = element?.closest<HTMLElement>("[data-card]");
+        if (card?.dataset.card === moving.id) return;
+        const ids = currentLayout[targetGroup].filter((id) => id !== moving.id);
+        let position = ids.length;
+        if (card) {
+          const rect = card.getBoundingClientRect();
+          position =
+            ids.indexOf(card.dataset.card!) +
+            Number(x > rect.left + rect.width / 2);
+        }
+        setDraft((old) =>
+          old ? placeCard(old, moving.id, targetGroup, position) : old,
+        );
+      }
+    },
+    () => {
+      setDraft(currentLayout);
+      setDraftPreferences(currentPreferences);
+    },
+  );
+  const shiftGroup = (id: string, delta: number) => {
+    const index = currentPreferences.order.indexOf(id);
+    const target = currentPreferences.order[index + delta];
+    if (target)
+      setDraftPreferences(
+        placeGroup(currentPreferences, id, target, delta > 0),
+      );
+  };
   const [showStatus, setShowStatus] = useState(false);
   const [redUp, setRedUp] = useState(() => readSaved("economic:red-up", true));
   const searchRef = useRef<HTMLInputElement>(null);
+  const settingsRef = useRef<HTMLDivElement>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const closeSettings = () => settingsRef.current?.hidePopover();
   useEffect(() => {
     localStorage.setItem("economic:favorites", JSON.stringify(favorites));
   }, [favorites]);
@@ -190,13 +296,16 @@ export function App() {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
-        if (!selected) searchRef.current?.focus();
+        if (!selected && !addGroup && !editing) {
+          settingsRef.current?.showPopover();
+          searchRef.current?.focus();
+        }
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [selected]);
-  const all: Summary[] =
+  }, [selected, addGroup, editing]);
+  const rawMetrics: Summary[] =
     dashboard.data?.metrics ||
     catalog.map((m) => ({
       ...m,
@@ -209,41 +318,50 @@ export function App() {
       lastSuccess: null,
       error: null,
     }));
+  const all = rawMetrics.map((metric) => ({
+    ...metric,
+    searchTerms: `${metric.name} ${metric.englishName || ""} ${t(metric.name)}`,
+    name: locale === "en" ? metric.englishName || t(metric.name) : metric.name,
+    source: t(metric.source),
+    note: t(metric.note),
+    unit: t(metric.unit),
+    volumeUnit: metric.volumeUnit ? t(metric.volumeUnit) : undefined,
+  }));
   const active = all.find((m) => m.id === selected);
   const ready = all.filter((m) => m.latest).length;
   const failures = all.filter((m) => m.error).length;
   const run = dashboard.data?.runs[0];
-  const filtering = search.trim() !== "" || watchOnly;
-  const visibleGroups = boardGroups
-    .map((group) => {
-      const candidates = all.filter((m) => group.groups.includes(m.group));
-      const order = new Map(group.primary.map((id, i) => [id, i]));
-      const filtered = candidates.filter(
-        (m) =>
-          (!watchOnly || favorites.includes(m.id)) &&
-          `${m.name} ${m.code} ${m.id}`
-            .toLowerCase()
-            .includes(search.trim().toLowerCase()),
-      );
-      const shown = filtered.filter(
-        (m) => filtering || expanded.includes(group.id) || order.has(m.id),
-      );
-      shown.sort((a, b) => (order.get(a.id) ?? 100) - (order.get(b.id) ?? 100));
-      return {
-        ...group,
-        shown,
-        extra: candidates.filter((m) => !order.has(m.id)).length,
-      };
-    })
-    .filter((group) => group.shown.length);
+  const filtering = !editing && (search.trim() !== "" || watchOnly);
+  const visibleGroups = currentPreferences.order
+    .map((id) => boardGroups.find((g) => g.id === id)!)
+    .map((group) => ({
+      ...group,
+      shown: currentLayout[group.id]
+        .map((id) => all.find((m) => m.id === id)!)
+        .filter(Boolean)
+        .filter(
+          (m) =>
+            editing ||
+            ((!watchOnly || favorites.includes(m.id)) &&
+              `${m.name} ${m.code} ${m.id} ${m.symbol} ${m.searchTerms || ""}`
+                .toLowerCase()
+                .includes(search.trim().toLowerCase())),
+        ),
+    }))
+    .filter((group) => editing || group.shown.length);
   const toggleFavorite = (id: string) =>
     setFavorites((old) =>
       old.includes(id) ? old.filter((x) => x !== id) : [...old, id],
     );
   return (
-    <div className={`app card-dashboard ${redUp ? "red-up" : "green-up"}`}>
+    <div
+      className={`app card-dashboard ${redUp ? "red-up" : "green-up"}`}
+      style={
+        { "--card-width": `${currentPreferences.width}px` } as CSSProperties
+      }
+    >
       <header className="header">
-        <a className="brand" href="/" aria-label="Economic Dashboard 首页">
+        <a className="brand" href="/" aria-label={t("Economic Dashboard 首页")}>
           <span className="brand-mark">
             <Activity size={22} />
           </span>
@@ -252,22 +370,28 @@ export function App() {
           </span>
         </a>
         <div className="header-right">
-          <span className="header-date">
-            {dateInZone(new Date(), "Asia/Shanghai")} <span>UTC+8</span>
-          </span>
           <button
-            className={`button ghost ${showStatus ? "active" : ""}`}
-            onClick={() => setShowStatus(!showStatus)}
-            aria-expanded={showStatus}
+            className={`icon-button settings-button ${settingsOpen || filtering ? "active" : ""}`}
+            aria-label={t("看板设置")}
+            title={t("看板设置")}
+            aria-expanded={settingsOpen}
+            aria-controls="board-settings"
+            popoverTarget="board-settings"
           >
-            <Database size={14} />
-            数据状态
-            {failures > 0 && <span className="count-warn">{failures}</span>}
+            <Settings size={17} />
+          </button>
+          <button
+            className="icon-button settings-button language-button"
+            aria-label={locale === "zh-CN" ? "Switch to English" : "切换为中文"}
+            title={locale === "zh-CN" ? "Switch to English" : "切换为中文"}
+            onClick={() => setLocale(locale === "zh-CN" ? "en" : "zh-CN")}
+          >
+            <Languages size={17} />
           </button>
           <button
             className="icon-button refresh-button"
-            aria-label="刷新看板"
-            title="刷新看板 · 读取已保存数据"
+            aria-label={t("刷新看板")}
+            title={t("刷新看板 · 读取已保存数据")}
             aria-busy={dashboard.isFetching}
             disabled={dashboard.isFetching}
             onClick={() => void dashboard.refetch()}
@@ -279,109 +403,233 @@ export function App() {
           </button>
         </div>
       </header>
+      <div
+        id="board-settings"
+        ref={settingsRef}
+        popover="auto"
+        className="settings-popover"
+        onToggle={(event) => setSettingsOpen(event.newState === "open")}
+      >
+        <div className="settings-heading">
+          <strong>{t("看板设置")}</strong>
+          <button
+            className="icon-button"
+            aria-label={t("关闭看板设置")}
+            onClick={closeSettings}
+          >
+            <X size={16} />
+          </button>
+        </div>
+        <div className="settings-controls">
+          <label className="search">
+            <Search size={15} />
+            <input
+              disabled={editing}
+              ref={searchRef}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={t("搜索市场 / 指标")}
+              aria-label={t("搜索市场或指标")}
+            />
+            {search ? (
+              <button
+                className="icon-button"
+                onClick={() => setSearch("")}
+                aria-label={t("清除搜索")}
+              >
+                <X size={14} />
+              </button>
+            ) : (
+              <kbd>⌘ K</kbd>
+            )}
+          </label>
+          <button
+            className={`button ghost small ${watchOnly ? "active" : ""}`}
+            disabled={editing}
+            onClick={() => setWatchOnly(!watchOnly)}
+            aria-pressed={watchOnly}
+          >
+            <Star size={14} fill={watchOnly ? "currentColor" : "none"} />
+            {t("仅显示关注")}
+          </button>
+          {!editing && (
+            <>
+              <button
+                className="button ghost small"
+                onClick={() => {
+                  closeSettings();
+                  startEditing();
+                  setAddGroup("auto");
+                }}
+              >
+                <Plus size={14} />
+                {t("新增")}
+              </button>
+              <button
+                className="button ghost small"
+                aria-label={t("编辑看板")}
+                title={t("编辑看板")}
+                onClick={() => {
+                  closeSettings();
+                  startEditing();
+                }}
+              >
+                <Pencil size={15} />
+                {t("编辑布局")}
+              </button>
+            </>
+          )}
+          <button
+            className="button ghost small"
+            onClick={() => setRedUp(!redUp)}
+            aria-label={redUp ? t("切换为绿涨红跌") : t("切换为红涨绿跌")}
+            title={redUp ? t("红涨绿跌") : t("绿涨红跌")}
+          >
+            <SlidersHorizontal size={15} />
+            {redUp ? t("红涨绿跌") : t("绿涨红跌")}
+          </button>
+        </div>
+        <label className="card-width-setting">
+          <span>
+            {t("卡片宽度")}
+            <output>{currentPreferences.width} px</output>
+          </span>
+          <input
+            type="range"
+            min="160"
+            max="300"
+            step="10"
+            value={currentPreferences.width}
+            aria-label={t("卡片宽度")}
+            onChange={(event) => changeWidth(Number(event.target.value))}
+          />
+        </label>
+        <button
+          className={`button ghost ${showStatus ? "active" : ""}`}
+          onClick={() => {
+            setShowStatus(!showStatus);
+            closeSettings();
+          }}
+          aria-expanded={showStatus}
+        >
+          <Database size={14} />
+          {t("数据状态")}
+          {failures > 0 && <span className="count-warn">{failures}</span>}
+        </button>
+      </div>
       <main>
-        <section className="board-toolbar" aria-label="看板筛选">
-          <h1>
-            市场全景{" "}
-            <span className="subtle">
-              {ready}/{all.length}
-            </span>
-          </h1>
-          <div className="board-controls">
-            <label className="search">
-              <Search size={15} />
-              <input
-                ref={searchRef}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="搜索市场 / 指标"
-                aria-label="搜索市场或指标"
-              />
-              {search ? (
-                <button
-                  className="icon-button"
-                  onClick={() => setSearch("")}
-                  aria-label="清除搜索"
-                >
-                  <X size={14} />
-                </button>
-              ) : (
-                <kbd>⌘ K</kbd>
-              )}
-            </label>
-            <button
-              className={`button ghost small ${watchOnly ? "active" : ""}`}
-              onClick={() => setWatchOnly(!watchOnly)}
-              aria-pressed={watchOnly}
-            >
-              <Star size={14} fill={watchOnly ? "currentColor" : "none"} />
-              关注
-            </button>
-            <button
-              className="icon-button"
-              onClick={() => setRedUp(!redUp)}
-              aria-label={redUp ? "切换为绿涨红跌" : "切换为红涨绿跌"}
-              title={redUp ? "红涨绿跌" : "绿涨红跌"}
-            >
-              <SlidersHorizontal size={15} />
-            </button>
+        {filtering && (
+          <div className="filter-summary">
+            {search && t("搜索：{0}", search)} {watchOnly && t("仅关注")}
           </div>
-        </section>
+        )}
+        <span className="sr-only" role="status" aria-live="polite">
+          {t(announcement)}
+        </span>
+        {editing && (
+          <div className="board-editbar">
+            <span>
+              {t("编辑看板")}{" "}
+              <small>
+                {t("拖动卡片或组标题排序 · 拖到组底部换行 · Esc 撤销拖动")}
+              </small>
+            </span>
+            <div className="editbar-actions">
+              <button
+                className="button ghost small"
+                onClick={() => {
+                  setDraft(defaultLayout());
+                  setDraftPreferences(normalizePreferences(null));
+                  setAnnouncement(t("已恢复默认布局，保存后生效"));
+                }}
+              >
+                <RotateCcw size={14} />
+                {t("恢复默认")}
+              </button>
+              <button
+                className="button ghost small"
+                onClick={() => {
+                  setDraft(null);
+                  setDraftPreferences(null);
+                  setLayoutError("");
+                }}
+              >
+                {t("取消")}
+              </button>
+              <button className="button primary small" onClick={saveLayout}>
+                <Check size={14} />
+                {t("保存")}
+              </button>
+            </div>
+          </div>
+        )}
+        {layoutError && (
+          <div className="notice error" role="alert">
+            {t(layoutError)}
+          </div>
+        )}
         {dashboard.isError && (
           <div className="notice error" role="alert">
             <CircleAlert size={18} />
-            <span>暂时无法读取数据：{dashboard.error.message}</span>
+            <span>
+              {t("暂时无法读取数据：")}
+              {t(dashboard.error.message)}
+            </span>
             <button className="button" onClick={() => void dashboard.refetch()}>
-              重试
+              {t("重试")}
             </button>
           </div>
         )}
         {dashboard.isPending && (
           <p className="board-loading" role="status">
-            正在读取市场档案…
+            {t("正在读取市场档案…")}
           </p>
         )}
         {dashboard.data && !ready && (
           <div className="notice">
             <Database size={18} />
             <span>
-              尚未采集数据。运行 pnpm collect 后即可查看真实行情与历史。
+              {t("尚未采集数据。运行 pnpm collect 后即可查看真实行情与历史。")}
             </span>
           </div>
         )}
         {showStatus && (
-          <section className="status-panel" aria-label="数据状态详情">
+          <section className="status-panel" aria-label={t("数据状态详情")}>
             <div className="section-head">
               <h2 className="inline-heading">
-                数据管线{" "}
+                {t("数据管线")}{" "}
                 <InfoTip
-                  label="采集规则"
-                  text="日频参考数据，非实时行情。Vercel 每日约08:00、Docker 每日08:00和18:30采集（UTC+8）。加密货币按UTC已结束日线保存，涨跌不是滚动24小时变化。超过4天仅提示数据较早，不推断休市。"
+                  label={t("采集规则")}
+                  text={t(
+                    "日频参考数据，非实时行情。Vercel 每日约08:00、Docker 每日08:00和18:30采集（UTC+8）。加密货币按UTC已结束日线保存，涨跌不是滚动24小时变化。超过4天仅提示数据较早，不推断休市。",
+                  )}
                 />
               </h2>
               <button
                 className="icon-button"
                 onClick={() => setShowStatus(false)}
-                aria-label="关闭数据状态"
+                aria-label={t("关闭数据状态")}
               >
                 <X size={16} />
               </button>
             </div>
             <div className="pipeline-summary">
               <span>
-                历史观测{" "}
+                {t("历史观测")}{" "}
                 <b>
-                  {all.reduce((n, m) => n + m.count, 0).toLocaleString()} 条
+                  {all.reduce((n, m) => n + m.count, 0).toLocaleString()}
+                  {t("条")}
                 </b>
               </span>
               <span>
-                存储{" "}
+                {t("存储")}{" "}
                 <b>
                   {dashboard.data?.storage === "remote" ? "Turso" : "SQLite"}
                 </b>
               </span>
               <span>
-                最近采集 <b>{timeLabel(run?.finishedAt || run?.startedAt)}</b>
+                {t("最近采集")}
+                <b>{timeLabel(run?.finishedAt || run?.startedAt)}</b>
               </span>
             </div>
             {all
@@ -389,84 +637,246 @@ export function App() {
               .map((m) => (
                 <div className="error-row" key={m.id}>
                   <span>{m.name}</span>
-                  <span>{m.error}</span>
+                  <span>{t(m.error || "")}</span>
                 </div>
               ))}
           </section>
         )}
-        <div className={`market-groups ${filtering ? "is-filtered" : ""}`}>
-          {visibleGroups.map((group) => (
-            <section
-              key={group.id}
-              className={`market-group group-${group.id}`}
-              aria-labelledby={`group-${group.id}`}
-            >
-              <div className="group-heading">
-                <h2 id={`group-${group.id}`}>
-                  {group.name}
-                  <span>{group.shown.length}</span>
-                </h2>
-                {!filtering && group.extra > 0 && (
-                  <button
-                    className="group-more"
-                    aria-expanded={expanded.includes(group.id)}
-                    onClick={() =>
-                      setExpanded((old) =>
-                        old.includes(group.id)
-                          ? old.filter((x) => x !== group.id)
-                          : [...old, group.id],
-                      )
-                    }
-                  >
-                    {expanded.includes(group.id)
-                      ? "收起"
-                      : `其他 ${group.extra}`}
-                    <ChevronDown size={12} />
-                  </button>
+        <div
+          className={`market-groups ${filtering ? "is-filtered" : ""} ${editing ? "is-editing" : ""} ${drag.active?.kind === "group" ? "sorting-groups" : ""}`}
+        >
+          {visibleGroups.map((group, groupIndex) => (
+            <Fragment key={group.id}>
+              {groupIndex > 0 &&
+                currentPreferences.rowStarts.includes(group.id) && (
+                  <div className="group-row-break" aria-hidden="true" />
                 )}
-              </div>
-              <div className="metric-cards">
-                {group.shown.map((m) => (
-                  <MarketCard
-                    key={m.id}
-                    metric={m}
-                    favorite={favorites.includes(m.id)}
-                    onFavorite={() => toggleFavorite(m.id)}
-                    onOpen={() => setSelected(m.id)}
-                  />
-                ))}
-              </div>
-            </section>
+              <section
+                data-group={group.id}
+                style={
+                  {
+                    "--group-width": `${Math.max(1, group.shown.length) * currentPreferences.width + Math.max(0, group.shown.length - 1) * 8}px`,
+                  } as CSSProperties
+                }
+                className={`market-group group-${group.id} ${drag.active?.kind === "group" && drag.active.id === group.id ? "sort-placeholder" : ""}`}
+                aria-labelledby={`group-${group.id}`}
+              >
+                <div
+                  className="group-heading"
+                  onPointerDown={(event) => {
+                    if (
+                      !editing ||
+                      (event.target as HTMLElement).closest(
+                        ".group-edit-actions",
+                      )
+                    )
+                      return;
+                    drag.start(event, { kind: "group", id: group.id });
+                  }}
+                >
+                  <h2 id={`group-${group.id}`}>
+                    {editing && (
+                      <button
+                        className="icon-button group-drag-handle"
+                        aria-label={t("拖动{0}分组", group.name)}
+                        title={t("拖动整组；也可用右侧箭头排序")}
+                      >
+                        <GripVertical size={16} />
+                      </button>
+                    )}
+                    {t(group.name)}
+                    <span>{group.shown.length}</span>
+                  </h2>
+                  {editing && (
+                    <div className="group-edit-actions">
+                      <button
+                        className="icon-button"
+                        aria-label={t("前移{0}分组", group.name)}
+                        disabled={groupIndex === 0}
+                        onClick={() => shiftGroup(group.id, -1)}
+                      >
+                        <ArrowLeft size={14} />
+                      </button>
+                      <button
+                        className="icon-button"
+                        aria-label={t("后移{0}分组", group.name)}
+                        disabled={groupIndex === visibleGroups.length - 1}
+                        onClick={() => shiftGroup(group.id, 1)}
+                      >
+                        <ArrowRight size={14} />
+                      </button>
+                      <button
+                        className="icon-button"
+                        aria-label={t(
+                          "{0}{1}分组",
+                          currentPreferences.rowStarts.includes(group.id)
+                            ? t("合并")
+                            : t("换行"),
+                          group.name,
+                        )}
+                        title={
+                          currentPreferences.rowStarts.includes(group.id)
+                            ? t("允许与前组同行")
+                            : t("移到下一行")
+                        }
+                        aria-pressed={currentPreferences.rowStarts.includes(
+                          group.id,
+                        )}
+                        onClick={() =>
+                          setDraftPreferences({
+                            ...currentPreferences,
+                            rowStarts: currentPreferences.rowStarts.includes(
+                              group.id,
+                            )
+                              ? currentPreferences.rowStarts.filter(
+                                  (id) => id !== group.id,
+                                )
+                              : [...currentPreferences.rowStarts, group.id],
+                          })
+                        }
+                      >
+                        <ArrowDown size={14} />
+                      </button>
+                      <button
+                        className="group-more"
+                        aria-label={t("向{0}添加卡片", group.name)}
+                        onClick={() => setAddGroup(group.id)}
+                      >
+                        <Plus size={14} />
+                        {t("添加")}
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <div className="metric-cards">
+                  {group.shown.map((m, index) => (
+                    <MarketCard
+                      key={m.id}
+                      metric={m}
+                      favorite={favorites.includes(m.id)}
+                      onFavorite={() => toggleFavorite(m.id)}
+                      onOpen={() => setSelected(m.id)}
+                      editor={
+                        editing
+                          ? {
+                              dragging:
+                                drag.active?.kind === "card" &&
+                                drag.active.id === m.id,
+                              onPointerDown: (event) =>
+                                drag.start(event, { kind: "card", id: m.id }),
+                              onPrevious:
+                                index > 0
+                                  ? () => moveCard(m.id, group.id, index - 1)
+                                  : undefined,
+                              onNext:
+                                index < group.shown.length - 1
+                                  ? () => moveCard(m.id, group.id, index + 1)
+                                  : undefined,
+                              onRemove: () => {
+                                setDraft((old) =>
+                                  old
+                                    ? {
+                                        ...old,
+                                        [group.id]: old[group.id].filter(
+                                          (id) => id !== m.id,
+                                        ),
+                                      }
+                                    : old,
+                                );
+                                setAnnouncement(t("已移除{0}", m.name));
+                              },
+                            }
+                          : undefined
+                      }
+                    />
+                  ))}
+                  {editing && !group.shown.length && (
+                    <button
+                      className="empty-group"
+                      onClick={() => setAddGroup(group.id)}
+                    >
+                      <Plus size={16} />
+                      {t("添加卡片或拖到这里")}
+                    </button>
+                  )}
+                </div>
+                {drag.active?.kind === "group" && (
+                  <div className="group-row-target" aria-hidden="true">
+                    {t("拖到这里，另起一行")}
+                  </div>
+                )}
+              </section>
+            </Fragment>
           ))}
         </div>
         {!visibleGroups.length && (
           <div className="table-empty">
             <Search size={22} />
             <strong>
-              {watchOnly ? "没有匹配的关注指标" : "没有匹配的指标"}
+              {filtering
+                ? watchOnly
+                  ? t("没有匹配的关注指标")
+                  : t("没有匹配的指标")
+                : t("看板还没有卡片")}
             </strong>
             <button
               className="button"
               onClick={() => {
-                setSearch("");
-                setWatchOnly(false);
+                if (!filtering) {
+                  startEditing();
+                  setAddGroup("auto");
+                } else {
+                  setSearch("");
+                  setWatchOnly(false);
+                }
               }}
             >
-              重置筛选
+              {filtering ? t("重置筛选") : t("添加卡片")}
             </button>
           </div>
         )}
-        <footer className="footer">
-          <span>
-            <span className={`health-dot ${failures ? "warning" : ""}`} />
-            {ready}/{all.length} 项有历史数据
-            {failures ? ` · ${failures} 项采集异常` : ""}
-          </span>
-          <span>
-            日频 · 最近采集 {timeLabel(run?.finishedAt || run?.startedAt)}
-          </span>
-        </footer>
+        <div
+          className="update-watermark"
+          title={t(
+            "最近采集时间 · 北京时间（UTC+8），各指标观测日期见 tooltip",
+          )}
+        >
+          {t("更新于")}
+          {timeLabel(run?.finishedAt || run?.startedAt)}
+        </div>
       </main>
+      {addGroup && draft && (
+        <AddCardDialog
+          groupId={addGroup}
+          layout={draft}
+          metrics={all}
+          onAdd={(id, group) => {
+            setDraft((old) =>
+              old ? placeCard(old, id, group, old[group].length) : old,
+            );
+            setAnnouncement(t("卡片已添加到草稿"));
+          }}
+          onTrack={async (symbol, group) => {
+            const response = await fetch("/api/stocks", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ symbol }),
+            });
+            const body = await response.json();
+            if (!response.ok) throw new Error(body.error || "添加个股失败");
+            const result = await dashboard.refetch();
+            if (result.isError)
+              throw new Error(t("历史已保存，但看板刷新失败，请重试添加"));
+            setDraft((old) =>
+              old
+                ? placeCard(old, body.metric.id, group, old[group].length)
+                : old,
+            );
+            setAnnouncement(t("{0}已加入看板草稿", symbol));
+          }}
+          onClose={() => setAddGroup(null)}
+        />
+      )}
       {active && (
         <DetailDrawer
           metric={active}
@@ -483,11 +893,19 @@ function MarketCard({
   favorite,
   onFavorite,
   onOpen,
+  editor,
 }: {
   metric: Summary;
   favorite: boolean;
   onFavorite: () => void;
   onOpen: () => void;
+  editor?: {
+    dragging: boolean;
+    onPointerDown: (event: PointerEvent<HTMLElement>) => void;
+    onPrevious?: () => void;
+    onNext?: () => void;
+    onRemove: () => void;
+  };
 }) {
   const delta = change(
     metric.latest?.value,
@@ -495,11 +913,53 @@ function MarketCard({
     metric.rate,
   );
   return (
-    <article className={`market-card ${metric.error ? "has-error" : ""}`}>
+    <article
+      className={`market-card ${metric.error ? "has-error" : ""} ${editor ? "editable" : ""} ${editor?.dragging ? "sort-placeholder" : ""}`}
+      data-card={metric.id}
+      onPointerDown={(event) => {
+        const button = (event.target as HTMLElement).closest("button");
+        if (button && !button.classList.contains("card-open")) return;
+        editor?.onPointerDown(event);
+      }}
+    >
+      {editor && (
+        <div className="card-editor">
+          <span
+            className="drag-handle"
+            title={t("拖动排序")}
+            aria-hidden="true"
+          >
+            <GripVertical size={16} />
+          </span>
+          <button
+            className="icon-button"
+            aria-label={t("前移{0}", metric.name)}
+            disabled={!editor.onPrevious}
+            onClick={editor.onPrevious}
+          >
+            <ArrowLeft size={14} />
+          </button>
+          <button
+            className="icon-button"
+            aria-label={t("后移{0}", metric.name)}
+            disabled={!editor.onNext}
+            onClick={editor.onNext}
+          >
+            <ArrowRight size={14} />
+          </button>
+          <button
+            className="icon-button remove-card"
+            aria-label={t("移除{0}", metric.name)}
+            onClick={editor.onRemove}
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
+      )}
       <button
         className="card-open"
-        onClick={onOpen}
-        aria-label={`查看${metric.name}详情`}
+        onClick={editor ? undefined : onOpen}
+        aria-label={t("查看{0}详情", metric.name)}
         aria-haspopup="dialog"
       >
         <span className="card-name">{metric.name}</span>
@@ -511,22 +971,28 @@ function MarketCard({
           <Delta value={delta} rate={metric.rate} />
           <Spark points={metric.spark} positive={(delta || 0) >= 0} />
         </span>
-        <span className="card-meta">
-          <span>
-            {metric.latest?.date || "待采集"}
-            {metric.group === "加密货币" ? " UTC" : ""}
+        {(metric.error ||
+          !metric.latest ||
+          freshness(metric.latest.date) === "delayed") && (
+          <span className="card-meta">
+            <Status metric={metric} />
           </span>
-          <Status metric={metric} />
-        </span>
+        )}
       </button>
       <div className="card-actions">
         <InfoTip
-          label={`${metric.name}来源与口径`}
-          text={`${metric.source}\n${metric.note}`}
+          label={t("{0}日期、来源与口径", metric.name)}
+          text={t(
+            "观测日期：{0}{1}\n{2}\n{3}",
+            metric.latest?.date || t("待采集"),
+            metric.group === "加密货币" ? " UTC" : "",
+            metric.source,
+            metric.note,
+          )}
         />
         <button
           className={`icon-button favorite ${favorite ? "saved" : ""}`}
-          aria-label={`${favorite ? "取消关注" : "关注"}${metric.name}`}
+          aria-label={`${favorite ? t("取消关注") : t("关注")}${metric.name}`}
           aria-pressed={favorite}
           onClick={onFavorite}
         >
@@ -576,12 +1042,15 @@ function DetailDrawer({
       }}
     >
       <div className="drawer-toolbar">
-        <span id="drawer-title">{metric.group} / 历史详情</span>
+        <span id="drawer-title">
+          {t(metric.group)}
+          {t("/ 历史详情")}
+        </span>
         <button
           autoFocus
           className="icon-button"
-          aria-label="关闭详情"
-          title="关闭详情 · Esc"
+          aria-label={t("关闭详情")}
+          title={t("关闭详情 · Esc")}
           onClick={() => dialog.current?.close()}
         >
           <X size={20} />
@@ -598,7 +1067,6 @@ function DetailDrawer({
     </dialog>
   );
 }
-
 function Detail({
   metric,
   favorite,
@@ -650,29 +1118,37 @@ function Detail({
           <h2>{metric.name}</h2>
           <span className="detail-category">
             <Globe2 size={13} />
-            {metric.group}
+            {t(metric.group)}
             <span>/</span>
             {metric.code}
           </span>
         </div>
         <div className="detail-actions">
           <InfoTip
-            label="数据来源与统计口径"
-            text={`${metric.source}\n${metric.note}\n观测日：${metric.latest?.date || "待采集"} · 单位：${metric.unit}\n最近成功：${timeLabel(metric.lastSuccess)}\n历史始于：${metric.firstDate || "尚未采集"}`}
+            label={t("数据来源与统计口径")}
+            text={t(
+              "{0}\n{1}\n观测日：{2} · 单位：{3}\n最近成功：{4}\n历史始于：{5}",
+              metric.source,
+              metric.note,
+              metric.latest?.date || t("待采集"),
+              metric.unit,
+              timeLabel(metric.lastSuccess),
+              metric.firstDate || "尚未采集",
+            )}
           />
           <a
             className="icon-button"
             href={metric.sourceUrl}
             target="_blank"
             rel="noreferrer"
-            aria-label="打开原始数据来源"
-            title="打开原始数据来源"
+            aria-label={t("打开原始数据来源")}
+            title={t("打开原始数据来源")}
           >
             <ExternalLink size={14} />
           </a>
           <button
             className={`icon-button favorite ${favorite ? "saved" : ""}`}
-            aria-label={favorite ? "取消关注当前指标" : "关注当前指标"}
+            aria-label={favorite ? t("取消关注当前指标") : t("关注当前指标")}
             aria-pressed={favorite}
             onClick={onFavorite}
           >
@@ -687,11 +1163,12 @@ function Detail({
       <div className="detail-change">
         <Delta value={delta} rate={metric.rate} />
         <span>
-          较前次观测{metric.previous ? ` · ${metric.previous.date}` : ""}
+          {t("较前次观测")}
+          {metric.previous ? ` · ${metric.previous.date}` : ""}
         </span>
       </div>
       <div className="period-toolbar">
-        <div className="periods" role="group" aria-label="历史时间范围">
+        <div className="periods" role="group" aria-label={t("历史时间范围")}>
           {["1M", "3M", "1Y", "ALL"].map((p) => (
             <button
               key={p}
@@ -704,14 +1181,14 @@ function Detail({
                 setCustomTo("");
               }}
             >
-              {p === "ALL" ? "全部" : p}
+              {p === "ALL" ? t("全部") : p}
             </button>
           ))}
         </div>
         <button
           className={`icon-button ${showDates ? "active" : ""}`}
           onClick={() => setShowDates(!showDates)}
-          aria-label="自选日期"
+          aria-label={t("自选日期")}
           aria-expanded={showDates}
         >
           <SlidersHorizontal size={16} />
@@ -723,8 +1200,8 @@ function Detail({
               ? undefined
               : `/api/history/${metric.id}?${query}&format=csv`
           }
-          aria-label="导出当前区间 CSV"
-          title="导出当前区间 CSV"
+          aria-label={t("导出当前区间 CSV")}
+          title={t("导出当前区间 CSV")}
         >
           <Download size={16} />
         </a>
@@ -732,19 +1209,19 @@ function Detail({
       {showDates && (
         <div className="date-controls">
           <label>
-            开始日期
+            {t("开始日期")}
             <input
               type="date"
-              aria-label="开始日期"
+              aria-label={t("开始日期")}
               value={customFrom || start}
               onChange={(e) => setCustomFrom(e.target.value)}
             />
           </label>
           <label>
-            结束日期
+            {t("结束日期")}
             <input
               type="date"
-              aria-label="结束日期"
+              aria-label={t("结束日期")}
               value={customTo || end}
               onChange={(e) => setCustomTo(e.target.value)}
             />
@@ -753,17 +1230,17 @@ function Detail({
       )}
       {invalid ? (
         <div className="chart-empty error-text" role="alert">
-          开始日期不能晚于结束日期
+          {t("开始日期不能晚于结束日期")}
         </div>
       ) : history.isPending ? (
         <div className="chart-empty" role="status">
-          正在加载历史曲线…
+          {t("正在加载历史曲线…")}
         </div>
       ) : history.isError ? (
         <div className="chart-empty">
-          <span>{history.error.message}</span>
+          <span>{t(history.error.message)}</span>
           <button className="button" onClick={() => void history.refetch()}>
-            重试
+            {t("重试")}
           </button>
         </div>
       ) : (
@@ -775,14 +1252,14 @@ function Detail({
       )}
       <div className="range-stats">
         <div>
-          <span>区间变化</span>
+          <span>{t("区间变化")}</span>
           <Delta
             value={points.length > 1 ? rangeChange : null}
             rate={metric.rate}
           />
         </div>
         <div>
-          <span>区间最高</span>
+          <span>{t("区间最高")}</span>
           <b>
             {formatValue(
               values.length ? Math.max(...values) : null,
@@ -791,7 +1268,7 @@ function Detail({
           </b>
         </div>
         <div>
-          <span>区间最低</span>
+          <span>{t("区间最低")}</span>
           <b>
             {formatValue(
               values.length ? Math.min(...values) : null,
@@ -804,14 +1281,20 @@ function Detail({
       (metric.group !== "A股" && metric.latest?.volume != null) ? (
         <div className="volume-line">
           <span>
-            {metric.marketActivity ? "市场成交量" : "源成交量"}{" "}
-            <small>{metric.volumeUnit || "未核实"}</small>
+            {metric.marketActivity ? t("市场成交量") : t("源成交量")}{" "}
+            <small>{metric.volumeUnit || t("未核实")}</small>
             <InfoTip
-              label="成交量统计口径"
+              label={t("成交量统计口径")}
               text={
                 metric.marketActivity
-                  ? `${metric.note}\n成交量与成交额分别记录，缺失股数不补零。`
-                  : `单位：${metric.volumeUnit || "尚未核实"}。源成交量不视为全市场成交量。`
+                  ? t(
+                      "{0}\n成交量与成交额分别记录，缺失股数不补零。",
+                      metric.note,
+                    )
+                  : t(
+                      "单位：{0}。源成交量不视为全市场成交量。",
+                      metric.volumeUnit || "尚未核实",
+                    )
               }
             />
           </span>
@@ -822,7 +1305,7 @@ function Detail({
         metric.volumeUnit &&
         volumePoints.length >= 21 && (
           <div className="volume-line">
-            <span>最新成交 / 前20次均量</span>
+            <span>{t("最新成交 / 前20次均量")}</span>
             <b>
               {formatValue(
                 volumePoints.at(-1)!.volume! /
@@ -836,28 +1319,36 @@ function Detail({
           </div>
         )}
       <div className="detail-meta">
-        <span>{metric.latest?.date || "待采集"}</span>
-        <span>{metric.count.toLocaleString()} 条历史</span>
+        <span>{metric.latest?.date || t("待采集")}</span>
+        <span>
+          {metric.count.toLocaleString()}
+          {t("条历史")}
+        </span>
         <Status metric={metric} />
       </div>
       {metric.error && (
         <div className="source-error">
           <CircleAlert size={14} />
-          {metric.error}
+          {t(metric.error)}
         </div>
       )}
       <details className="history-details">
         <summary>
-          历史记录与修订{" "}
+          {t("历史记录与修订")}{" "}
           <span>
-            {points.length} 条<ChevronDown size={14} />
+            {points.length}
+            {t("条")}
+            <ChevronDown size={14} />
           </span>
         </summary>
         <div className="history-caption">
-          最近20条{" "}
+          {t("最近20条")}{" "}
           <InfoTip
-            label="历史记录说明"
-            text={`展示区间内最近20条，完整记录可导出 CSV。累计历史始于 ${metric.firstDate || "尚未采集"}。`}
+            label={t("历史记录说明")}
+            text={t(
+              "展示区间内最近20条，完整记录可导出 CSV。累计历史始于 {0}。",
+              metric.firstDate || "尚未采集",
+            )}
           />
         </div>
         <div className="history-rows">
@@ -869,10 +1360,17 @@ function Detail({
                 <span>{p.date}</span>
                 <b>{formatValue(p.value, metric.precision)}</b>
                 <span className="history-source">
-                  {p.revisedAt ? "已修订" : null}
+                  {p.revisedAt ? t("已修订") : null}
                   <InfoTip
-                    label={`${p.date} 数据来源`}
-                    text={`${p.source}\n首次采集：${timeLabel(p.fetchedAt)}${p.revisedAt ? `\n修订：${timeLabel(p.revisedAt)}` : ""}`}
+                    label={t("{0} 数据来源", p.date)}
+                    text={t(
+                      "{0}\n首次采集：{1}{2}",
+                      p.source,
+                      timeLabel(p.fetchedAt),
+                      p.revisedAt
+                        ? t("\n修订：{0}", timeLabel(p.revisedAt))
+                        : "",
+                    )}
                   />
                 </span>
               </div>
@@ -880,7 +1378,7 @@ function Detail({
         </div>
         {!!history.data?.revisions.length && (
           <>
-            <h3>最近修订（最多100条）</h3>
+            <h3>{t("最近修订（最多100条）")}</h3>
             {history.data.revisions.map((r, i) => (
               <div className="revision" key={`${r.changedAt}-${i}`}>
                 {r.date}：{formatValue(r.oldValue, metric.precision)} →{" "}

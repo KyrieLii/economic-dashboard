@@ -724,11 +724,23 @@ kbd {
 }
 .chart-slider::-webkit-slider-runnable-track {
   height: 4px;
-  background: linear-gradient(to right, transparent 8px, var(--rule) 8px, var(--rule) calc(100% - 8px), transparent calc(100% - 8px));
+  background: linear-gradient(
+    to right,
+    transparent 8px,
+    var(--rule) 8px,
+    var(--rule) calc(100% - 8px),
+    transparent calc(100% - 8px)
+  );
 }
 .chart-slider::-moz-range-track {
   height: 4px;
-  background: linear-gradient(to right, transparent 8px, var(--rule) 8px, var(--rule) calc(100% - 8px), transparent calc(100% - 8px));
+  background: linear-gradient(
+    to right,
+    transparent 8px,
+    var(--rule) 8px,
+    var(--rule) calc(100% - 8px),
+    transparent calc(100% - 8px)
+  );
 }
 .chart-slider::-webkit-slider-thumb {
   appearance: none;
@@ -1842,7 +1854,7 @@ h1 {
   font-size: 12px;
   font-weight: 500;
   min-height: 18px;
-  padding-right: 32px;
+  padding-right: 44px;
 }
 .card-quote {
   display: flex;
@@ -2064,7 +2076,8 @@ h1 {
     gap: 8px;
   }
   .card-name {
-    padding-right: 38px;
+    padding-right: 54px;
+    overflow-wrap: anywhere;
   }
   .card-actions .icon-button {
     width: 26px;
@@ -2096,5 +2109,482 @@ h1 {
   }
   .market-card {
     transition: none;
+  }
+}
+
+/* Personal board layout: controls appear only while editing. */
+.board-editbar,
+.editbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.board-editbar {
+  justify-content: space-between;
+  padding: 10px 0;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--rule);
+  font-size: 13px;
+}
+.board-editbar small {
+  color: var(--muted);
+  margin-left: 12px;
+}
+.board-controls {
+  flex-wrap: wrap;
+}
+.card-editor {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--rule);
+}
+.card-editor .icon-button {
+  width: 32px;
+  height: 32px;
+}
+.card-editor .remove-card {
+  margin-left: auto;
+}
+.card-editor .remove-card:hover {
+  color: var(--warning);
+}
+.drag-handle {
+  display: flex;
+  padding: 6px;
+  cursor: grab;
+  color: var(--muted);
+}
+.is-dragging {
+  opacity: 0.5;
+}
+.editable .card-actions {
+  top: 47px;
+}
+.card-editor button:disabled,
+.picker-result button:disabled {
+  cursor: default;
+}
+.empty-group {
+  grid-column: 1 / -1;
+  min-height: 130px;
+  border: 1px dashed var(--rule);
+  border-radius: 10px;
+  color: var(--muted);
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.empty-group:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.add-card-dialog {
+  width: min(520px, calc(100vw - 24px));
+  max-height: min(720px, calc(100dvh - 32px));
+  padding: 0;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  color: var(--ink);
+  background: var(--surface);
+}
+.add-card-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+.add-card-dialog::backdrop {
+  background: #0008;
+}
+.add-card-dialog h2 {
+  font-size: 16px;
+  color: var(--ink);
+}
+.picker-controls {
+  padding: 16px;
+}
+.picker-controls .search {
+  width: 100%;
+  max-width: none;
+}
+.picker-controls input {
+  width: 100%;
+  min-width: 0;
+}
+.picker-target {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 12px;
+}
+.picker-target select {
+  flex: 1;
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid var(--rule);
+  border-radius: 5px;
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+}
+.picker-summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.picker-summary [role="status"] {
+  color: var(--accent);
+}
+.picker-results {
+  overflow-y: auto;
+  min-height: 140px;
+  overscroll-behavior: contain;
+  padding: 0 16px;
+}
+.picker-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--rule);
+}
+.picker-result > div {
+  min-width: 0;
+}
+.picker-result strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+}
+.picker-result small {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+}
+.picker-result button {
+  flex-shrink: 0;
+  min-height: 34px;
+}
+.picker-result button:disabled {
+  opacity: 0.65;
+}
+.picker-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 180px;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.picker-empty strong {
+  color: var(--ink);
+}
+.picker-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--rule);
+  font-size: 11px;
+  color: var(--muted);
+}
+@media (max-width: 600px) {
+  .board-editbar {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .board-editbar > span {
+    width: 100%;
+  }
+  .editbar-actions {
+    margin-left: auto;
+  }
+  .board-controls .search {
+    flex-basis: calc(100% - 160px);
+  }
+  .card-editor .icon-button {
+    height: 36px;
+  }
+  .editable .card-actions {
+    top: 51px;
+  }
+  .drag-handle {
+    display: none;
+  }
+}
+
+.card-dashboard .group-rates {
+  grid-row: auto;
+}
+.settings-button {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--rule);
+}
+.settings-popover {
+  position: fixed;
+  inset: 60px 20px auto auto;
+  margin: 0;
+  width: min(360px, calc(100vw - 24px));
+  max-height: calc(100dvh - 76px);
+  overflow-y: auto;
+  padding: 14px;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 12px 32px #0006;
+}
+.settings-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+.settings-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.settings-controls .search {
+  grid-column: 1 / -1;
+  width: 100%;
+  max-width: none;
+  height: 36px;
+}
+.settings-controls .button,
+.settings-popover > .button {
+  justify-content: flex-start;
+  font-size: 12px;
+}
+.settings-popover > .button {
+  margin-top: 8px;
+  width: 100%;
+}
+.filter-summary {
+  color: var(--muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .settings-button {
+    width: 36px;
+    height: 36px;
+  }
+  .settings-popover {
+    right: 12px;
+  }
+}
+.stock-search-results h3 {
+  font-size: 12px;
+  margin: 16px 0 8px;
+  color: var(--ink);
+}
+.stock-hint {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 10px 0;
+}
+.stock-search-error {
+  color: var(--warning);
+  font-size: 12px;
+  line-height: 1.6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* Fixed-width, left-aligned cards; groups occupy only their content width. */
+.card-dashboard .market-groups {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0 18px;
+}
+.card-dashboard .market-group {
+  position: relative;
+  flex: 0 1 var(--group-width);
+  margin-bottom: 20px;
+  width: var(--group-width);
+  max-width: 100%;
+  min-width: 0;
+}
+.card-dashboard .metric-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.card-dashboard .market-card,
+.card-dashboard .empty-group {
+  flex: 0 0 var(--card-width);
+  width: var(--card-width);
+  max-width: 100%;
+}
+.group-row-break {
+  flex-basis: 100%;
+  height: 0;
+  margin: 0;
+}
+.is-editing .group-heading {
+  height: auto;
+  min-height: 32px;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.group-edit-actions {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  gap: 2px;
+}
+.group-edit-actions .icon-button {
+  width: 28px;
+  height: 28px;
+}
+.group-edit-actions [aria-pressed="true"] {
+  color: var(--accent);
+}
+.is-editing .group-heading,
+.group-drag-handle,
+.editable .card-open,
+.editable .drag-handle {
+  cursor: grab;
+  touch-action: none;
+}
+.editable .drag-handle {
+  display: flex;
+}
+.board-dragging,
+.board-dragging * {
+  cursor: grabbing !important;
+  user-select: none;
+}
+.card-dashboard .board-drag-overlay {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 100;
+  pointer-events: none;
+  margin: 0;
+  opacity: 0.96;
+  will-change: transform;
+  max-width: none;
+  background: var(--surface);
+  box-shadow: 0 16px 36px #0008;
+  border: 0;
+}
+.card-dashboard .sort-placeholder {
+  opacity: 0.2;
+  outline: 1px dashed var(--accent);
+  outline-offset: 2px;
+}
+.group-row-target {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  color: var(--accent);
+  border-bottom: 1px dashed var(--accent);
+  font-size: 11px;
+  pointer-events: none;
+}
+.card-width-setting {
+  display: grid;
+  gap: 10px;
+  padding: 14px 0;
+  border-top: 1px solid var(--rule);
+}
+.card-width-setting > span {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+}
+.card-width-setting output {
+  color: var(--muted);
+  font-family: "JetBrains Mono Variable", monospace;
+}
+.card-width-setting input {
+  width: 100%;
+  accent-color: var(--accent);
+  cursor: ew-resize;
+}
+.update-watermark {
+  position: fixed;
+  right: 16px;
+  bottom: 10px;
+  font:
+    11px "JetBrains Mono Variable",
+    monospace;
+  color: var(--muted);
+  opacity: 0.65;
+  pointer-events: none;
+}
+.card-dashboard main {
+  padding-bottom: 40px;
+}
+.filter-summary {
+  margin-bottom: 14px;
+}
+@media (max-width: 600px) {
+  .board-editbar small {
+    display: block;
+    margin: 5px 0 0;
+    max-width: 270px;
+  }
+  .group-edit-actions .icon-button {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+.picker-markets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.picker-markets [aria-pressed="true"] {
+  color: var(--accent);
+  background: #b9ed8014;
+}
+.picker-markets .button {
+  padding: 7px 10px;
+}
+
+.card-dashboard .header-right {
+  gap: 6px;
+}
+.card-dashboard .header-right > .icon-button {
+  width: 32px;
+  height: 32px;
+  margin: 0;
+}
+.card-name {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .card-dashboard .header-right > .icon-button {
+    width: 34px;
+    height: 34px;
   }
 }

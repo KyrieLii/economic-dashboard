@@ -29,6 +29,7 @@ export async function initDb(): Promise<void> {
   initialized ??= db()
     .batch(
       [
+        `CREATE TABLE IF NOT EXISTS custom_metrics (id TEXT PRIMARY KEY, definition TEXT NOT NULL, created_at TEXT NOT NULL)`,
         `CREATE TABLE IF NOT EXISTS observations (
       metric_id TEXT NOT NULL, date TEXT NOT NULL, value REAL NOT NULL, volume REAL,
       source TEXT NOT NULL, fetched_at TEXT NOT NULL, revised_at TEXT,

@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { metrics } from "../shared/catalog";
+import { allMetrics } from "./registry";
 import { db, initDb } from "./db";
 import { fetchMetric } from "./providers";
 import { collectActivity } from "./market-activity";
@@ -30,6 +30,7 @@ export async function collect(ids?: string[], backfill = false) {
     const existing = new Map(
       counts.rows.map((row) => [String(row.metric_id), Number(row.n)]),
     );
+    const metrics = await allMetrics(client);
     const queue = metrics.filter(
       (metric) => !metric.marketActivity && (!ids || ids.includes(metric.id)),
     );
@@ -38,6 +39,15 @@ export async function collect(ids?: string[], backfill = false) {
       while (queue.length) {
         const metric = queue.shift()!;
         try {
+          if (Date.now() + 12000 > deadline) {
+            failures++;
+            await recordFailure(
+              client,
+              metric.id,
+              "本轮采集时间不足，保留历史并等待下次更新",
+            );
+            continue;
+          }
           const points = await fetchMetric(
             metric,
             backfill || !existing.get(metric.id),

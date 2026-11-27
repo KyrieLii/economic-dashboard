@@ -5,7 +5,13 @@ await initDb();
 const client = db();
 const tx = await client.transaction("read");
 try {
-  const tables = ["observations", "revisions", "metric_status", "runs"];
+  const tables = [
+    "observations",
+    "revisions",
+    "metric_status",
+    "runs",
+    "custom_metrics",
+  ];
   const results = await tx.batch(tables.map((name) => `SELECT * FROM ${name}`));
   await tx.commit();
   const now = new Date().toISOString();

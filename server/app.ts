@@ -2,7 +2,8 @@ import { Hono } from "hono";
 import { basicAuth } from "hono/basic-auth";
 import { HTTPException } from "hono/http-exception";
 import { timingSafeEqual } from "node:crypto";
-import { metricById } from "../shared/catalog";
+import { allMetrics } from "./registry";
+import { searchStocks, registerStock, StockError } from "./stocks";
 import { isDate } from "../shared/model";
 import { db, databaseUrl, initDb } from "./db";
 import { readDashboard, toPoint } from "./store";
@@ -33,7 +34,8 @@ app.get("/api/dashboard", async (c) => {
   });
 });
 app.get("/api/history/:id", async (c) => {
-  if (!metricById.has(c.req.param("id")))
+  await initDb();
+  if (!(await allMetrics(db())).some((m) => m.id === c.req.param("id")))
     return c.json({ error: "未知指标" }, 404);
   const from = c.req.query("from") || "1900-01-01";
   const to = c.req.query("to") || "2100-01-01";
@@ -86,6 +88,59 @@ app.get("/api/history/:id", async (c) => {
       changedAt: String(r.changed_at),
     })),
   });
+});
+app.get("/api/stocks/search", async (c) => {
+  const query = (c.req.query("q") || "").trim();
+  if (!query || query.length > 80)
+    return c.json({ error: "请输入1至80个字符的名称或代码" }, 400);
+  try {
+    const market = c.req.query("market") || "all";
+    if (!["all", "a", "hk", "us", "crypto"].includes(market))
+      return c.json({ error: "未知搜索市场" }, 400);
+    return c.json(
+      await searchStocks(
+        query,
+        market as import("../shared/model").SearchMarket,
+      ),
+    );
+  } catch {
+    return c.json({ error: "资产搜索暂时不可用，请稍后重试" }, 502);
+  }
+});
+app.post("/api/stocks", async (c) => {
+  const origin = c.req.header("Origin");
+  const requestUrl = new URL(c.req.url);
+  let trustedOrigin = !origin || origin === requestUrl.origin;
+  if (origin && !trustedOrigin) {
+    try {
+      const source = new URL(origin);
+      const loopback = new Set(["localhost", "127.0.0.1", "[::1]"]);
+      // Vite forwards local requests to a different loopback port.
+      trustedOrigin =
+        loopback.has(source.hostname) && loopback.has(requestUrl.hostname);
+    } catch {
+      trustedOrigin = false;
+    }
+  }
+  if (!trustedOrigin || c.req.header("Sec-Fetch-Site") === "cross-site")
+    return c.json({ error: "不允许跨站修改" }, 403);
+  if (
+    !c.req.header("Content-Type")?.toLowerCase().startsWith("application/json")
+  )
+    return c.json({ error: "需要JSON请求" }, 415);
+  const body = await c.req.json().catch(() => null);
+  if (!body || typeof body.symbol !== "string")
+    return c.json({ error: "请提供资产代码" }, 400);
+  await initDb();
+  try {
+    return c.json({
+      metric: await registerStock(db(), body.symbol.trim().toUpperCase()),
+    });
+  } catch (error) {
+    if (error instanceof StockError)
+      return c.json({ error: error.message }, error.status);
+    throw error;
+  }
 });
 app.get("/api/cron", async (c) => {
   const expected = process.env.CRON_SECRET;

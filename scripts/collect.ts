@@ -1,10 +1,12 @@
 import { collect } from "../server/collect";
-import { metricById } from "../shared/catalog";
-import { db } from "../server/db";
+import { allMetrics } from "../server/registry";
+import { db, initDb } from "../server/db";
 
 const args = process.argv.slice(2);
 const ids = args.filter((arg) => !arg.startsWith("--"));
-if (ids.some((id) => !metricById.has(id)))
+await initDb();
+const known = new Set((await allMetrics(db())).map((m) => m.id));
+if (ids.some((id) => !known.has(id)))
   throw new Error("未知指标ID；请查 shared/catalog.ts");
 try {
   const result = await collect(

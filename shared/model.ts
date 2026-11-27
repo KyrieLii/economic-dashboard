@@ -3,6 +3,7 @@ export type Group =
 export interface Metric {
   id: string;
   name: string;
+  englishName?: string;
   code: string;
   group: Group;
   unit: string;
@@ -34,6 +35,7 @@ export interface Point extends Observation {
   source: string;
 }
 export interface Summary extends Metric {
+  searchTerms?: string;
   latest: Point | null;
   previous: Point | null;
   spark: Observation[];
@@ -123,4 +125,12 @@ export function freshness(
   return now.getTime() - Date.parse(date + "T23:59:59Z") > 4 * 86400000
     ? "delayed"
     : "recent";
+}
+
+export type SearchMarket = "all" | "a" | "hk" | "us" | "crypto";
+export interface StockCandidate {
+  market: SearchMarket;
+  symbol: string;
+  name: string;
+  exchange: string;
 }

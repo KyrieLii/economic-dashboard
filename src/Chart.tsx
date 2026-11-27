@@ -1,6 +1,6 @@
+import { t } from "./i18n";
 import { useEffect, useId, useRef, useState, type CSSProperties } from "react";
 import { formatValue, type Observation } from "../shared/model";
-
 export function Spark({
   points,
   positive,
@@ -53,8 +53,8 @@ export function HistoryChart({
   if (!points.length)
     return (
       <div className="chart-empty">
-        <span>暂无这段时间的历史数据</span>
-        <small>选择更长的时间范围，或等待数据采集。</small>
+        <span>{t("暂无这段时间的历史数据")}</span>
+        <small>{t("选择更长的时间范围，或等待数据采集。")}</small>
       </div>
     );
   const values = points.map((p) => p.value),
@@ -90,12 +90,17 @@ export function HistoryChart({
         <strong>
           {formatValue(points[current].value, precision)} <small>{unit}</small>
         </strong>
-        <span>{hover == null ? "收盘 / 发布值" : "历史观测"}</span>
+        <span>{hover == null ? t("收盘 / 发布值") : t("历史观测")}</span>
       </div>
       <svg
         viewBox={`0 0 ${w} ${h}`}
         role="img"
-        aria-label={`${points[0].date} 至 ${points.at(-1)!.date} 的历史趋势，共 ${points.length} 条记录`}
+        aria-label={t(
+          "{0} 至 {1} 的历史趋势，共 {2} 条记录",
+          points[0].date,
+          points.at(-1)!.date,
+          points.length,
+        )}
         onPointerLeave={() => setHover(null)}
         onPointerMove={(event) => {
           const bounds = event.currentTarget.getBoundingClientRect();
@@ -175,12 +180,14 @@ export function HistoryChart({
       </svg>
       <input
         className="chart-slider"
-        style={{
-          // A range thumb travels inside its own width. Extend each end by
-          // half the thumb so its center shares the SVG plot's x coordinates.
-          "--plot-left": `${left}px`,
-          "--plot-right": `${right}px`,
-        } as CSSProperties}
+        style={
+          {
+            // A range thumb travels inside its own width. Extend each end by
+            // half the thumb so its center shares the SVG plot's x coordinates.
+            "--plot-left": `${left}px`,
+            "--plot-right": `${right}px`,
+          } as CSSProperties
+        }
         type="range"
         min={0}
         max={Math.max(points.length - 1, 1)}
@@ -188,7 +195,7 @@ export function HistoryChart({
         value={points.length === 1 ? 0.5 : current}
         disabled={points.length === 1}
         onChange={(e) => setHover(Number(e.target.value))}
-        aria-label="选择历史观测日期"
+        aria-label={t("选择历史观测日期")}
         aria-valuetext={`${points[current].date}，${points[current].value} ${unit}`}
       />
     </div>
