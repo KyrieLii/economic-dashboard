@@ -6,6 +6,12 @@
 
 [![一键部署到 Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FKyrieLii%2Feconomic-dashboard&env=TURSO_DATABASE_URL,TURSO_AUTH_TOKEN,CRON_SECRET&envDescription=Enter%20your%20Turso%20database%20URL%20and%20auth%20token%2C%20plus%20a%20random%20secret%20for%20scheduled%20collection.&envLink=https%3A%2F%2Fgithub.com%2FKyrieLii%2Feconomic-dashboard%2Fblob%2Fmain%2Fdocs%2Fdeployment.md%23vercel--turso)
 
+## 使用演示
+
+[![Economic Dashboard 使用视频预览](docs/assets/economic-dashboard-demo.jpg)](docs/assets/economic-dashboard-demo.mp4)
+
+[观看 30 秒使用视频](docs/assets/economic-dashboard-demo.mp4)：介绍市场总览、历史走势、资产搜索、布局编辑和语言切换。中文配音与字幕，1080p。
+
 ## 功能
 
 - 内置 34 项指标，包含 5 项市场成交额指标及 BTC、ETH，按六组卡片展示。支持搜索、关注，以及红涨绿跌 / 绿涨红跌切换。

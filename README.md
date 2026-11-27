@@ -6,6 +6,12 @@ A single page for tracking mainland Chinese, US, and Hong Kong equities, commodi
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FKyrieLii%2Feconomic-dashboard&env=TURSO_DATABASE_URL,TURSO_AUTH_TOKEN,CRON_SECRET&envDescription=Enter%20your%20Turso%20database%20URL%20and%20auth%20token%2C%20plus%20a%20random%20secret%20for%20scheduled%20collection.&envLink=https%3A%2F%2Fgithub.com%2FKyrieLii%2Feconomic-dashboard%2Fblob%2Fmain%2Fdocs%2Fdeployment.md%23vercel--turso)
 
+## Demo
+
+[![Economic Dashboard video preview](docs/assets/economic-dashboard-demo.jpg)](docs/assets/economic-dashboard-demo.mp4)
+
+[Watch the 30-second demo](docs/assets/economic-dashboard-demo.mp4) — market overview, historical charts, asset search, layout editing, and language switching. Chinese narration and captions; 1080p.
+
 ## Features
 
 - Current quotes for supported indices, stocks, crypto, commodities and exchange rates, checked every 60 seconds while the page is visible. SSE 50 and CSI 500 show source prices and changes from the previous close during trading. Hover the information icon for the actual quote timestamp and source; providers may delay quotes.
