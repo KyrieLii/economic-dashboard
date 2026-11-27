@@ -1,0 +1,382 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-27T10:15:53.178015+00:00",
+  "title": "Design System: Economic Dashboard",
+  "extensions": {
+    "colorMeta": {
+      "bg": {
+        "role": "neutral",
+        "displayName": "Charcoal",
+        "tonalRamp": [
+          "oklch(15.0% 0.0037 253.2)",
+          "oklch(26.0% 0.0082 253.2)",
+          "oklch(37.0% 0.0127 253.2)",
+          "oklch(49.0% 0.0149 253.2)",
+          "oklch(61.0% 0.0149 253.2)",
+          "oklch(73.0% 0.0127 253.2)",
+          "oklch(85.0% 0.0074 253.2)",
+          "oklch(95.0% 0.0022 253.2)"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Dark slate",
+        "tonalRamp": [
+          "oklch(15.0% 0.0052 254.9)",
+          "oklch(26.0% 0.0115 254.9)",
+          "oklch(37.0% 0.0178 254.9)",
+          "oklch(49.0% 0.0209 254.9)",
+          "oklch(61.0% 0.0209 254.9)",
+          "oklch(73.0% 0.0178 254.9)",
+          "oklch(85.0% 0.0105 254.9)",
+          "oklch(95.0% 0.0031 254.9)"
+        ]
+      },
+      "raised": {
+        "role": "neutral",
+        "displayName": "Raised slate",
+        "tonalRamp": [
+          "oklch(15.0% 0.0064 251.3)",
+          "oklch(26.0% 0.0140 251.3)",
+          "oklch(37.0% 0.0217 251.3)",
+          "oklch(49.0% 0.0255 251.3)",
+          "oklch(61.0% 0.0255 251.3)",
+          "oklch(73.0% 0.0217 251.3)",
+          "oklch(85.0% 0.0128 251.3)",
+          "oklch(95.0% 0.0038 251.3)"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Slate rule",
+        "tonalRamp": [
+          "oklch(15.0% 0.0070 252.9)",
+          "oklch(26.0% 0.0153 252.9)",
+          "oklch(37.0% 0.0237 252.9)",
+          "oklch(49.0% 0.0278 252.9)",
+          "oklch(61.0% 0.0278 252.9)",
+          "oklch(73.0% 0.0237 252.9)",
+          "oklch(85.0% 0.0139 252.9)",
+          "oklch(95.0% 0.0042 252.9)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Pale ink",
+        "tonalRamp": [
+          "oklch(15.0% 0.0035 248.0)",
+          "oklch(26.0% 0.0076 248.0)",
+          "oklch(37.0% 0.0117 248.0)",
+          "oklch(49.0% 0.0138 248.0)",
+          "oklch(61.0% 0.0138 248.0)",
+          "oklch(73.0% 0.0117 248.0)",
+          "oklch(85.0% 0.0069 248.0)",
+          "oklch(95.0% 0.0021 248.0)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted steel",
+        "tonalRamp": [
+          "oklch(15.0% 0.0082 252.8)",
+          "oklch(26.0% 0.0181 252.8)",
+          "oklch(37.0% 0.0280 252.8)",
+          "oklch(49.0% 0.0329 252.8)",
+          "oklch(61.0% 0.0329 252.8)",
+          "oklch(73.0% 0.0280 252.8)",
+          "oklch(85.0% 0.0165 252.8)",
+          "oklch(95.0% 0.0049 252.8)"
+        ]
+      },
+      "accent": {
+        "role": "primary",
+        "displayName": "Signal lime",
+        "tonalRamp": [
+          "oklch(15.0% 0.0372 129.9)",
+          "oklch(26.0% 0.0818 129.9)",
+          "oklch(37.0% 0.1264 129.9)",
+          "oklch(49.0% 0.1487 129.9)",
+          "oklch(61.0% 0.1487 129.9)",
+          "oklch(73.0% 0.1264 129.9)",
+          "oklch(85.0% 0.0744 129.9)",
+          "oklch(95.0% 0.0223 129.9)"
+        ]
+      },
+      "up": {
+        "role": "secondary",
+        "displayName": "Rise rose",
+        "tonalRamp": [
+          "oklch(15.0% 0.0345 12.5)",
+          "oklch(26.0% 0.0760 12.5)",
+          "oklch(37.0% 0.1174 12.5)",
+          "oklch(49.0% 0.1381 12.5)",
+          "oklch(61.0% 0.1381 12.5)",
+          "oklch(73.0% 0.1174 12.5)",
+          "oklch(85.0% 0.0691 12.5)",
+          "oklch(95.0% 0.0207 12.5)"
+        ]
+      },
+      "down": {
+        "role": "secondary",
+        "displayName": "Fall mint",
+        "tonalRamp": [
+          "oklch(15.0% 0.0281 166.7)",
+          "oklch(26.0% 0.0619 166.7)",
+          "oklch(37.0% 0.0957 166.7)",
+          "oklch(49.0% 0.1126 166.7)",
+          "oklch(61.0% 0.1126 166.7)",
+          "oklch(73.0% 0.0957 166.7)",
+          "oklch(85.0% 0.0563 166.7)",
+          "oklch(95.0% 0.0169 166.7)"
+        ]
+      },
+      "warning": {
+        "role": "secondary",
+        "displayName": "Warning amber",
+        "tonalRamp": [
+          "oklch(15.0% 0.0271 76.2)",
+          "oklch(26.0% 0.0595 76.2)",
+          "oklch(37.0% 0.0920 76.2)",
+          "oklch(49.0% 0.1083 76.2)",
+          "oklch(61.0% 0.1083 76.2)",
+          "oklch(73.0% 0.0920 76.2)",
+          "oklch(85.0% 0.0541 76.2)",
+          "oklch(95.0% 0.0162 76.2)"
+        ]
+      },
+      "primary-ink": {
+        "role": "primary",
+        "displayName": "Deep lime ink",
+        "tonalRamp": [
+          "oklch(15.0% 0.0127 133.1)",
+          "oklch(26.0% 0.0278 133.1)",
+          "oklch(37.0% 0.0430 133.1)",
+          "oklch(49.0% 0.0506 133.1)",
+          "oklch(61.0% 0.0506 133.1)",
+          "oklch(73.0% 0.0430 133.1)",
+          "oklch(85.0% 0.0253 133.1)",
+          "oklch(95.0% 0.0076 133.1)"
+        ]
+      },
+      "primary-hover": {
+        "role": "primary",
+        "displayName": "Light lime",
+        "tonalRamp": [
+          "oklch(15.0% 0.0299 129.6)",
+          "oklch(26.0% 0.0657 129.6)",
+          "oklch(37.0% 0.1015 129.6)",
+          "oklch(49.0% 0.1194 129.6)",
+          "oklch(61.0% 0.1194 129.6)",
+          "oklch(73.0% 0.1015 129.6)",
+          "oklch(85.0% 0.0597 129.6)",
+          "oklch(95.0% 0.0179 129.6)"
+        ]
+      },
+      "button-hover": {
+        "role": "neutral",
+        "displayName": "Hover slate",
+        "tonalRamp": [
+          "oklch(15.0% 0.0077 250.7)",
+          "oklch(26.0% 0.0170 250.7)",
+          "oklch(37.0% 0.0263 250.7)",
+          "oklch(49.0% 0.0310 250.7)",
+          "oklch(61.0% 0.0310 250.7)",
+          "oklch(73.0% 0.0263 250.7)",
+          "oklch(85.0% 0.0155 250.7)",
+          "oklch(95.0% 0.0046 250.7)"
+        ]
+      },
+      "row-selected": {
+        "role": "neutral",
+        "displayName": "Selected row green",
+        "tonalRamp": [
+          "oklch(15.0% 0.0049 185.1)",
+          "oklch(26.0% 0.0107 185.1)",
+          "oklch(37.0% 0.0165 185.1)",
+          "oklch(49.0% 0.0194 185.1)",
+          "oklch(61.0% 0.0194 185.1)",
+          "oklch(73.0% 0.0165 185.1)",
+          "oklch(85.0% 0.0097 185.1)",
+          "oklch(95.0% 0.0029 185.1)"
+        ]
+      },
+      "benchmark-selected": {
+        "role": "neutral",
+        "displayName": "Selected benchmark green",
+        "tonalRamp": [
+          "oklch(15.0% 0.0043 163.1)",
+          "oklch(26.0% 0.0094 163.1)",
+          "oklch(37.0% 0.0146 163.1)",
+          "oklch(49.0% 0.0172 163.1)",
+          "oklch(61.0% 0.0172 163.1)",
+          "oklch(73.0% 0.0146 163.1)",
+          "oklch(85.0% 0.0086 163.1)",
+          "oklch(95.0% 0.0026 163.1)"
+        ]
+      },
+      "period-selected": {
+        "role": "primary",
+        "displayName": "Translucent lime",
+        "tonalRamp": [
+          "oklch(15.0% 0.0372 129.9)",
+          "oklch(26.0% 0.0818 129.9)",
+          "oklch(37.0% 0.1264 129.9)",
+          "oklch(49.0% 0.1487 129.9)",
+          "oklch(61.0% 0.1487 129.9)",
+          "oklch(73.0% 0.1264 129.9)",
+          "oklch(85.0% 0.0744 129.9)",
+          "oklch(95.0% 0.0223 129.9)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "metric": {
+        "displayName": "Primary measurement",
+        "purpose": "Selected metric value, with tabular figures."
+      },
+      "axis": {
+        "displayName": "Chart axis",
+        "purpose": "Dated endpoints and numeric ticks at 12px."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "control-transition",
+        "value": "background .15s, color .15s",
+        "purpose": "Button hover changes; disabled by reduced-motion preference."
+      },
+      {
+        "name": "refresh-spin",
+        "value": "spin 1s linear infinite",
+        "purpose": "Refresh activity; disabled by reduced-motion preference."
+      },
+      {
+        "name": "mobile-selection",
+        "value": "smooth",
+        "purpose": "Scroll selected detail into view at 600px and below; instant with reduced motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "wide-min",
+        "value": "1600px"
+      },
+      {
+        "name": "compact-max",
+        "value": "1250px"
+      },
+      {
+        "name": "stack-max",
+        "value": "950px"
+      },
+      {
+        "name": "mobile-max",
+        "value": "600px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Button",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "Compact action with hover, keyboard focus, and disabled states.",
+      "html": "<button class=\"ds-button\">刷新看板</button>",
+      "css": ".ds-button{font-family:'Inter Variable',-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;font-size:14px;display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--rule,#27323f);border-radius:7px;padding:9px 13px;font-weight:500;cursor:pointer;transition:background .15s,color .15s;background:var(--raised,#17212c);color:var(--ink,#e5edf5);}.ds-button:hover{background:#23303e}.ds-button:focus-visible{outline:2px solid var(--accent,#b9ed80);outline-offset:4px}.ds-button:disabled{opacity:.55;cursor:wait}@media(prefers-reduced-motion:reduce){button{transition:none}}"
+    },
+    {
+      "name": "Primary button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Compact action with hover, keyboard focus, and disabled states.",
+      "html": "<button class=\"ds-primary\">刷新看板</button>",
+      "css": ".ds-primary{font-family:'Inter Variable',-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;font-size:14px;display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--rule,#27323f);border-radius:7px;padding:9px 13px;font-weight:500;cursor:pointer;transition:background .15s,color .15s;background:var(--accent,#b9ed80);color:#18270c;border-color:transparent;}.ds-primary:hover{background:#ccf6a0}.ds-primary:focus-visible{outline:2px solid var(--accent,#b9ed80);outline-offset:4px}.ds-primary:disabled{opacity:.55;cursor:wait}@media(prefers-reduced-motion:reduce){button{transition:none}}"
+    },
+    {
+      "name": "Ghost button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Compact action with hover, keyboard focus, and disabled states.",
+      "html": "<button class=\"ds-ghost\">刷新看板</button>",
+      "css": ".ds-ghost{font-family:'Inter Variable',-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;font-size:14px;display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--rule,#27323f);border-radius:7px;padding:9px 13px;font-weight:500;cursor:pointer;transition:background .15s,color .15s;background:transparent;color:var(--ink,#e5edf5);border-color:transparent;}.ds-ghost:hover{background:var(--raised,#17212c)}.ds-ghost:focus-visible{outline:2px solid var(--accent,#b9ed80);outline-offset:4px}.ds-ghost:disabled{opacity:.55;cursor:wait}@media(prefers-reduced-motion:reduce){button{transition:none}}"
+    },
+    {
+      "name": "Search field",
+      "kind": "input",
+      "refersTo": "search",
+      "description": "Inset search field; lime enclosing border signals focus.",
+      "html": "<label class=\"ds-search\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"8\"/><path d=\"m21 21-4.3-4.3\"/></svg><input aria-label=\"搜索指标或代码\" placeholder=\"搜索指标或代码\"/></label>",
+      "css": ".ds-search{display:flex;align-items:center;gap:8px;color:var(--muted,#9aaabd);background:var(--bg,#0b1016);border:1px solid var(--rule,#27323f);border-radius:6px;height:34px;padding:0 9px;width:235px;max-width:100%}.ds-search:focus-within{border-color:var(--accent,#b9ed80)}.ds-search input{font-family:'Inter Variable',-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;font-size:14px;background:none;border:0;outline:0;min-width:0;width:100%;color:var(--ink,#e5edf5);caret-color:var(--accent,#b9ed80)}.ds-search input::placeholder{color:var(--muted,#9aaabd)}"
+    },
+    {
+      "name": "Category navigation",
+      "kind": "nav",
+      "description": "Scrollable text categories with active underline.",
+      "html": "<nav class=\"ds-tabs\" aria-label=\"市场分类\"><button class=\"ds-active\" aria-pressed=\"true\">全部市场</button><button aria-pressed=\"false\">A股</button><button aria-pressed=\"false\">美股</button></nav>",
+      "css": ".ds-tabs{display:flex;gap:20px;padding:0 20px;border-bottom:1px solid var(--rule,#27323f);overflow-x:auto}.ds-tabs button{font-family:'Inter Variable',-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;font-size:14px;padding:0 0 13px;background:transparent;border:0;border-bottom:2px solid transparent;color:var(--muted,#9aaabd);white-space:nowrap;cursor:pointer}.ds-tabs button.ds-active{color:var(--accent,#b9ed80);border-bottom-color:var(--accent,#b9ed80)}.ds-tabs button:hover{color:var(--ink,#e5edf5)}.ds-tabs button:focus-visible{outline:2px solid var(--accent,#b9ed80);outline-offset:4px}"
+    },
+    {
+      "name": "Selected period",
+      "kind": "chip",
+      "refersTo": "period-active",
+      "description": "Compact time-range toggle with translucent selection.",
+      "html": "<button class=\"ds-period\" aria-pressed=\"true\">1Y</button>",
+      "css": ".ds-period{border:0;background:#b9ed801a;color:var(--accent,#b9ed80);padding:5px 9px;border-radius:5px;font-size:12px;font-family:\"JetBrains Mono Variable\",monospace;cursor:pointer}.ds-period:hover{background:var(--raised,#17212c)}.ds-period:focus-visible{outline:2px solid var(--accent,#b9ed80);outline-offset:4px}"
+    },
+    {
+      "name": "Benchmark card",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "Single benchmark cell; production cells share a divided strip. Preview intentionally uses missing values.",
+      "html": "<div class=\"ds-benchmarks\"><button class=\"ds-benchmark\" aria-pressed=\"true\"><span class=\"ds-name\">沪深300</span><strong class=\"ds-value\">—</strong><span class=\"ds-date\">等待数据</span></button></div>",
+      "css": ".ds-benchmarks{border:1px solid var(--rule,#27323f);border-radius:10px;overflow:hidden;background:var(--surface,#111821)}.ds-benchmark{font-family:'Inter Variable',-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;font-size:14px;display:block;text-align:left;position:relative;padding:17px 22px;border:0;width:100%;background:#18221d;color:var(--ink,#e5edf5);cursor:pointer}.ds-benchmark:after{content:\"\";position:absolute;bottom:0;left:20px;right:20px;height:2px;background:var(--accent,#b9ed80)}.ds-benchmark:hover{background:#18221d}.ds-benchmark:focus-visible{outline:2px solid var(--accent,#b9ed80);outline-offset:4px;outline-offset:-4px}.ds-value{display:block;font-family:\"JetBrains Mono Variable\",monospace;font-size:25px;font-weight:500;letter-spacing:-.04em;margin:13px 0 10px}.ds-date{font-size:12px;color:var(--muted,#9aaabd)}"
+    },
+    {
+      "name": "Selected metric row",
+      "kind": "custom",
+      "refersTo": "metric-selected",
+      "description": "Aligned table selection with a secondary mono identifier. Preview uses missing values.",
+      "html": "<table class=\"ds-table\"><tbody><tr><td><button class=\"ds-metric\" aria-pressed=\"true\">标普500<span>^GSPC</span></button></td><td class=\"ds-number\">—</td><td class=\"ds-number\">—</td></tr></tbody></table>",
+      "css": ".ds-table{font-family:'Inter Variable',-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;font-size:14px;width:100%;border-collapse:collapse;color:var(--ink,#e5edf5)}.ds-table tr{background:#1b2927}.ds-table td{height:58px;padding:10px;border-bottom:1px solid #202b37}.ds-table tr:hover{background:#1b2927}.ds-metric{font-family:'Inter Variable',-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;font-size:14px;font-weight:500;background:none;border:0;padding:0;color:var(--accent,#b9ed80);text-align:left;cursor:pointer}.ds-metric span{display:block;font-family:\"JetBrains Mono Variable\",monospace;font-size:12px;font-weight:400;margin-top:4px;color:var(--muted,#9aaabd)}.ds-metric:focus-visible{outline:2px solid var(--accent,#b9ed80);outline-offset:4px}.ds-number{text-align:right;font-family:\"JetBrains Mono Variable\",monospace;font-variant-numeric:tabular-nums}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Scientific figure plates",
+    "overview": "A dark observation desk with calibrated charts, aligned measurements, and quiet dividing rules. Its modern, technical character comes from precise numeric typography and readable evidence, rather than decoration.\n\nChinese interface labels use the system CJK fallback beside locally bundled Latin fonts. Dates, units, sources, and missing-data states remain part of the visual hierarchy.",
+    "keyCharacteristics": [
+      "Charcoal surfaces with restrained lime selection and action accents.",
+      "Monospaced measurements paired with compact sans-serif labels.",
+      "Flat, ruled panels and responsive detail views."
+    ],
+    "rules": [
+      {
+        "name": "The Signed Change Rule",
+        "body": "Pair rise/fall color with a sign and unit; color alone never carries the meaning.",
+        "section": "colors"
+      },
+      {
+        "name": "The Measurement Rule",
+        "body": "Use the mono face for quantities and identifiers; retain the sans-serif stack for descriptive labels. Auxiliary text and chart axes stay at least 12px in the implemented layouts.",
+        "section": "typography"
+      },
+      {
+        "name": "The Ruled Surface Rule",
+        "body": "Separate data regions with the existing tonal layers and thin rules before adding elevation.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** align quantities and use explicit units, dates, and signed changes.",
+      "**Do** use lime consistently for selection, primary action, and chart emphasis.",
+      "**Do** preserve visible focus and the mobile selection-to-detail behavior.",
+      "**Do** show missing observations and source failures explicitly."
+    ],
+    "donts": [
+      "**Don't** imply rise or fall through color alone.",
+      "**Don't** substitute invented chart points for absent observations.",
+      "**Don't** add decorative imagery or hero typography to the data workspace.",
+      "**Don't** hide latest values or changes to make the mobile table fit."
+    ]
+  }
+}

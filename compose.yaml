@@ -1,0 +1,17 @@
+services:
+  dashboard:
+    build: .
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL: file:/app/data/economic.db
+      ENABLE_SCHEDULER: "true"
+      CRON_SECRET: ${CRON_SECRET:-}
+      DASHBOARD_PASSWORD: ${DASHBOARD_PASSWORD:-}
+      DATA_PROXY_URL: ${DATA_PROXY_URL:-}
+    volumes:
+      - economic-data:/app/data
+    restart: unless-stopped
+    init: true
+volumes:
+  economic-data:
