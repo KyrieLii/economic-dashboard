@@ -16,7 +16,7 @@ import {
   Star,
   X,
 } from "lucide-react";
-import { groups } from "../shared/catalog";
+import { metrics as catalog } from "../shared/catalog";
 import {
   change,
   dateInZone,
@@ -28,6 +28,7 @@ import {
   type Summary,
 } from "../shared/model";
 import { HistoryChart, Spark } from "./Chart";
+import { InfoTip } from "./InfoTip";
 
 async function getJson<T>(url: string): Promise<T> {
   const response = await fetch(url);
@@ -100,16 +101,70 @@ function Status({ metric }: { metric: Summary }) {
         较早数据
       </span>
     );
-  return <span className="status muted">日频</span>;
+  return null;
 }
+const boardGroups = [
+  {
+    id: "a",
+    name: "A 股",
+    groups: ["A股"],
+    primary: [
+      "a-turnover",
+      "sse50",
+      "csi300",
+      "csi500",
+      "csi1000",
+      "chinext",
+      "star50",
+    ],
+  },
+  {
+    id: "us",
+    name: "美股 / 美元",
+    groups: ["美股", "汇率"],
+    primary: ["nasdaq", "sp500", "usdcny", "usdcnh"],
+  },
+  {
+    id: "hk",
+    name: "港股",
+    groups: ["港股"],
+    primary: ["hsi", "hstech", "hscei"],
+  },
+  {
+    id: "commodities",
+    name: "黄金 / 布油",
+    groups: ["大宗商品"],
+    primary: ["gold", "brent"],
+  },
+  {
+    id: "crypto",
+    name: "加密货币",
+    groups: ["加密货币"],
+    primary: ["btc", "eth"],
+  },
+  {
+    id: "rates",
+    name: "利率 / 美债",
+    groups: ["利率与美债"],
+    primary: [
+      "us2y",
+      "us10y",
+      "us30y",
+      "sofr",
+      "effr",
+      "shibor-on",
+      "shibor-1w",
+    ],
+  },
+];
+
 export function App() {
   const dashboard = useQuery({
     queryKey: ["dashboard"],
     queryFn: () => getJson<DashboardData>("/api/dashboard"),
     refetchInterval: 300000,
   });
-  const [selected, setSelected] = useState("sp500");
-  const [category, setCategory] = useState("全部市场");
+  const [selected, setSelected] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [favorites, setFavorites] = useState<string[]>(() =>
     readSaved("economic:favorites", [
@@ -121,6 +176,7 @@ export function App() {
     ]),
   );
   const [watchOnly, setWatchOnly] = useState(false);
+  const [expanded, setExpanded] = useState<string[]>([]);
   const [showStatus, setShowStatus] = useState(false);
   const [redUp, setRedUp] = useState(() => readSaved("economic:red-up", true));
   const searchRef = useRef<HTMLInputElement>(null);
@@ -134,54 +190,62 @@ export function App() {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
-        searchRef.current?.focus();
+        if (!selected) searchRef.current?.focus();
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, []);
-  const data = dashboard.data;
-  const all = data?.metrics || [];
+  }, [selected]);
+  const all: Summary[] =
+    dashboard.data?.metrics ||
+    catalog.map((m) => ({
+      ...m,
+      latest: null,
+      previous: null,
+      spark: [],
+      count: 0,
+      firstDate: null,
+      lastAttempt: null,
+      lastSuccess: null,
+      error: null,
+    }));
   const active = all.find((m) => m.id === selected);
-  const shown = all.filter(
-    (m) =>
-      (category === "全部市场" || m.group === category) &&
-      (!watchOnly || favorites.includes(m.id)) &&
-      `${m.name} ${m.code} ${m.id}`
-        .toLowerCase()
-        .includes(search.toLowerCase()),
-  );
   const ready = all.filter((m) => m.latest).length;
   const failures = all.filter((m) => m.error).length;
-  const delayed = all.filter(
-    (m) => m.latest && freshness(m.latest.date) === "delayed",
-  ).length;
-  const run = data?.runs[0];
-  const selectMetric = (id: string) => {
-    setSelected(id);
-    if (window.matchMedia("(max-width: 600px)").matches)
-      requestAnimationFrame(() => {
-        const detail = document.getElementById("metric-detail");
-        detail?.scrollIntoView({
-          block: "start",
-          behavior: window.matchMedia("(prefers-reduced-motion: reduce)")
-            .matches
-            ? "instant"
-            : "smooth",
-        });
-        detail?.focus({ preventScroll: true });
-      });
-  };
+  const run = dashboard.data?.runs[0];
+  const filtering = search.trim() !== "" || watchOnly;
+  const visibleGroups = boardGroups
+    .map((group) => {
+      const candidates = all.filter((m) => group.groups.includes(m.group));
+      const order = new Map(group.primary.map((id, i) => [id, i]));
+      const filtered = candidates.filter(
+        (m) =>
+          (!watchOnly || favorites.includes(m.id)) &&
+          `${m.name} ${m.code} ${m.id}`
+            .toLowerCase()
+            .includes(search.trim().toLowerCase()),
+      );
+      const shown = filtered.filter(
+        (m) => filtering || expanded.includes(group.id) || order.has(m.id),
+      );
+      shown.sort((a, b) => (order.get(a.id) ?? 100) - (order.get(b.id) ?? 100));
+      return {
+        ...group,
+        shown,
+        extra: candidates.filter((m) => !order.has(m.id)).length,
+      };
+    })
+    .filter((group) => group.shown.length);
   const toggleFavorite = (id: string) =>
     setFavorites((old) =>
       old.includes(id) ? old.filter((x) => x !== id) : [...old, id],
     );
   return (
-    <div className={`app ${redUp ? "red-up" : "green-up"}`}>
+    <div className={`app card-dashboard ${redUp ? "red-up" : "green-up"}`}>
       <header className="header">
         <a className="brand" href="/" aria-label="Economic Dashboard 首页">
           <span className="brand-mark">
-            <Activity size={23} />
+            <Activity size={22} />
           </span>
           <span>
             economic<span className="brand-light"> / dashboard</span>
@@ -196,111 +260,130 @@ export function App() {
             onClick={() => setShowStatus(!showStatus)}
             aria-expanded={showStatus}
           >
-            <Database size={15} />
+            <Database size={14} />
             数据状态
             {failures > 0 && <span className="count-warn">{failures}</span>}
+          </button>
+          <button
+            className="icon-button refresh-button"
+            aria-label="刷新看板"
+            title="刷新看板 · 读取已保存数据"
+            aria-busy={dashboard.isFetching}
+            disabled={dashboard.isFetching}
+            onClick={() => void dashboard.refetch()}
+          >
+            <RefreshCw
+              size={15}
+              className={dashboard.isFetching ? "spin" : ""}
+            />
           </button>
         </div>
       </header>
       <main>
-        <section className="page-intro">
-          <div>
-            <h1>
-              全球市场<span className="title-separator">/</span>
-              <span className="title-light">每日观察</span>
-            </h1>
-            <p>把市场的变化，放在同一张图景里。</p>
-          </div>
-          <div className="intro-actions">
-            <span className="update-label">
-              最近采集 <b>{timeLabel(run?.finishedAt || run?.startedAt)}</b>
+        <section className="board-toolbar" aria-label="看板筛选">
+          <h1>
+            市场全景{" "}
+            <span className="subtle">
+              {ready}/{all.length}
             </span>
-            <button
-              className="button primary"
-              onClick={() => {
-                void dashboard.refetch();
-              }}
-              disabled={dashboard.isFetching}
-              title="重新读取已保存的数据；数据采集由后台定时任务执行"
-            >
-              <RefreshCw
-                size={15}
-                className={dashboard.isFetching ? "spin" : ""}
+          </h1>
+          <div className="board-controls">
+            <label className="search">
+              <Search size={15} />
+              <input
+                ref={searchRef}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="搜索市场 / 指标"
+                aria-label="搜索市场或指标"
               />
-              刷新看板
+              {search ? (
+                <button
+                  className="icon-button"
+                  onClick={() => setSearch("")}
+                  aria-label="清除搜索"
+                >
+                  <X size={14} />
+                </button>
+              ) : (
+                <kbd>⌘ K</kbd>
+              )}
+            </label>
+            <button
+              className={`button ghost small ${watchOnly ? "active" : ""}`}
+              onClick={() => setWatchOnly(!watchOnly)}
+              aria-pressed={watchOnly}
+            >
+              <Star size={14} fill={watchOnly ? "currentColor" : "none"} />
+              关注
+            </button>
+            <button
+              className="icon-button"
+              onClick={() => setRedUp(!redUp)}
+              aria-label={redUp ? "切换为绿涨红跌" : "切换为红涨绿跌"}
+              title={redUp ? "红涨绿跌" : "绿涨红跌"}
+            >
+              <SlidersHorizontal size={15} />
             </button>
           </div>
         </section>
         {dashboard.isError && (
           <div className="notice error" role="alert">
             <CircleAlert size={18} />
-            <div>
-              <strong>暂时无法读取数据</strong>
-              <p>{dashboard.error.message}</p>
-            </div>
+            <span>暂时无法读取数据：{dashboard.error.message}</span>
             <button className="button" onClick={() => void dashboard.refetch()}>
               重试
             </button>
           </div>
         )}
-        {data && ready === 0 && (
+        {dashboard.isPending && (
+          <p className="board-loading" role="status">
+            正在读取市场档案…
+          </p>
+        )}
+        {dashboard.data && !ready && (
           <div className="notice">
-            <Database size={20} />
-            <div>
-              <strong>你的市场档案，从第一次采集开始</strong>
-              <p>
-                本地运行 <code>pnpm collect</code> 获取真实数据；Docker
-                自动采集，Vercel 由每日任务更新。尚未获取的数值保留为空。
-              </p>
-            </div>
+            <Database size={18} />
+            <span>
+              尚未采集数据。运行 pnpm collect 后即可查看真实行情与历史。
+            </span>
           </div>
         )}
         {showStatus && (
           <section className="status-panel" aria-label="数据状态详情">
             <div className="section-head">
-              <h2>数据管线</h2>
+              <h2 className="inline-heading">
+                数据管线{" "}
+                <InfoTip
+                  label="采集规则"
+                  text="日频参考数据，非实时行情。Vercel 每日约08:00、Docker 每日08:00和18:30采集（UTC+8）。加密货币按UTC已结束日线保存，涨跌不是滚动24小时变化。超过4天仅提示数据较早，不推断休市。"
+                />
+              </h2>
               <button
                 className="icon-button"
                 onClick={() => setShowStatus(false)}
                 aria-label="关闭数据状态"
               >
-                <X size={18} />
+                <X size={16} />
               </button>
             </div>
             <div className="pipeline-summary">
-              <span>
-                已存历史{" "}
-                <b>
-                  {ready}/{all.length}
-                </b>
-              </span>
-              <span>
-                存储{" "}
-                <b>
-                  {data?.storage === "remote"
-                    ? "Turso 远程数据库"
-                    : "本地 SQLite"}
-                </b>
-              </span>
               <span>
                 历史观测{" "}
                 <b>
                   {all.reduce((n, m) => n + m.count, 0).toLocaleString()} 条
                 </b>
               </span>
+              <span>
+                存储{" "}
+                <b>
+                  {dashboard.data?.storage === "remote" ? "Turso" : "SQLite"}
+                </b>
+              </span>
+              <span>
+                最近采集 <b>{timeLabel(run?.finishedAt || run?.startedAt)}</b>
+              </span>
             </div>
-            <p className="muted">
-              日频数据，非实时行情。日期以各市场的交易日或官方观测日为准；超过4天标为较早数据，不推断市场是否休市。
-            </p>
-            {run && (
-              <p>
-                最近任务：
-                {run.status === "running"
-                  ? "采集中；若长时间不变请检查服务日志"
-                  : `${run.successes} 项成功 / ${run.failures} 项失败`}{" "}
-                · {timeLabel(run.startedAt)}
-              </p>
-            )}
             {all
               .filter((m) => m.error)
               .map((m) => (
@@ -309,269 +392,213 @@ export function App() {
                   <span>{m.error}</span>
                 </div>
               ))}
-            <p className="muted">
-              刷新看板读取数据库，不会触发抓取。Vercel 每日约08:00、Docker
-              每日08:00和18:30更新（UTC+8）。
-            </p>
           </section>
         )}
-        <section className="benchmarks" aria-label="核心指标">
-          {["csi300", "sp500", "hsi", "gold", "us10y"].map((id) => {
-            const m = all.find((x) => x.id === id);
-            return (
-              <button
-                key={id}
-                className={`benchmark ${selected === id ? "selected" : ""}`}
-                onClick={() => selectMetric(id)}
-                aria-pressed={selected === id}
-              >
-                <span className="benchmark-name">
-                  {m?.name ||
-                    {
-                      csi300: "沪深300",
-                      sp500: "标普500",
-                      hsi: "恒生指数",
-                      gold: "COMEX 黄金",
-                      us10y: "美债 10 年收益率",
-                    }[id]}
-                  <span>{m?.rate ? "YIELD" : m?.group}</span>
-                </span>
-                <span className="benchmark-value">
-                  {formatValue(m?.latest?.value, m?.precision)}
-                  <small>{m?.rate ? "%" : ""}</small>
-                </span>
-                <span className="benchmark-bottom">
-                  <Delta
-                    value={change(
-                      m?.latest?.value,
-                      m?.previous?.value,
-                      m?.rate,
-                    )}
-                    rate={m?.rate}
-                  />
-                  <span>{m?.latest?.date?.slice(5) || "等待数据"}</span>
-                </span>
-              </button>
-            );
-          })}
-        </section>
-        <div className="workspace">
-          <section className="market-panel" aria-label="市场指标列表">
-            <div className="section-head">
-              <h2>
-                市场全景{" "}
-                <span className="subtle">
-                  {shown.length.toString().padStart(2, "0")}
-                </span>
-              </h2>
-              <button
-                className={`button ghost small ${watchOnly ? "active" : ""}`}
-                onClick={() => setWatchOnly(!watchOnly)}
-                aria-pressed={watchOnly}
-              >
-                <Star size={14} fill={watchOnly ? "currentColor" : "none"} />
-                我的关注
-              </button>
-            </div>
-            <nav className="tabs" aria-label="市场分类">
-              {["全部市场", ...groups].map((group) => (
-                <button
-                  key={group}
-                  className={category === group ? "active" : ""}
-                  onClick={() => setCategory(group)}
-                  aria-pressed={category === group}
-                >
-                  {group}
-                </button>
-              ))}
-            </nav>
-            <div className="table-tools">
-              <label className="search">
-                <Search size={16} />
-                <input
-                  ref={searchRef}
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="搜索指标或代码"
-                  aria-label="搜索指标或代码"
-                />
-                {search ? (
+        <div className={`market-groups ${filtering ? "is-filtered" : ""}`}>
+          {visibleGroups.map((group) => (
+            <section
+              key={group.id}
+              className={`market-group group-${group.id}`}
+              aria-labelledby={`group-${group.id}`}
+            >
+              <div className="group-heading">
+                <h2 id={`group-${group.id}`}>
+                  {group.name}
+                  <span>{group.shown.length}</span>
+                </h2>
+                {!filtering && group.extra > 0 && (
                   <button
-                    className="icon-button"
-                    onClick={() => setSearch("")}
-                    aria-label="清除搜索"
+                    className="group-more"
+                    aria-expanded={expanded.includes(group.id)}
+                    onClick={() =>
+                      setExpanded((old) =>
+                        old.includes(group.id)
+                          ? old.filter((x) => x !== group.id)
+                          : [...old, group.id],
+                      )
+                    }
                   >
-                    <X size={14} />
+                    {expanded.includes(group.id)
+                      ? "收起"
+                      : `其他 ${group.extra}`}
+                    <ChevronDown size={12} />
                   </button>
-                ) : (
-                  <kbd>⌘ K</kbd>
                 )}
-              </label>
-              <button
-                className="color-toggle"
-                onClick={() => setRedUp(!redUp)}
-                title="切换涨跌颜色"
-              >
-                <SlidersHorizontal size={13} />
-                {redUp ? "红涨绿跌" : "绿涨红跌"}
-              </button>
-            </div>
-            <div className="table-scroll">
-              <table className="market-table">
-                <thead>
-                  <tr>
-                    <th>
-                      <span className="sr-only">关注</span>
-                    </th>
-                    <th>指标 / 代码</th>
-                    <th>最新值</th>
-                    <th>日变化</th>
-                    <th className="trend-column">近31次观测</th>
-                    <th className="date-column">数据日期</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {shown.map((m) => {
-                    const delta = change(
-                      m.latest?.value,
-                      m.previous?.value,
-                      m.rate,
-                    );
-                    return (
-                      <tr
-                        key={m.id}
-                        className={selected === m.id ? "selected" : ""}
-                        onClick={() => selectMetric(m.id)}
-                      >
-                        <td>
-                          <button
-                            className={`favorite icon-button ${favorites.includes(m.id) ? "saved" : ""}`}
-                            aria-label={`${favorites.includes(m.id) ? "取消关注" : "关注"}${m.name}`}
-                            aria-pressed={favorites.includes(m.id)}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleFavorite(m.id);
-                            }}
-                          >
-                            <Star
-                              size={14}
-                              fill={
-                                favorites.includes(m.id)
-                                  ? "currentColor"
-                                  : "none"
-                              }
-                            />
-                          </button>
-                        </td>
-                        <td>
-                          <button
-                            className="metric-name"
-                            aria-pressed={selected === m.id}
-                            onClick={() => selectMetric(m.id)}
-                          >
-                            {m.name}
-                            <span>
-                              {m.code}
-                              <span className="mobile-date">
-                                {" "}
-                                · {m.latest?.date || "待采集"}
-                              </span>
-                            </span>
-                          </button>
-                        </td>
-                        <td className="numeric">
-                          {formatValue(m.latest?.value, m.precision)}
-                          {m.rate && m.latest && <small>%</small>}
-                        </td>
-                        <td>
-                          <Delta value={delta} rate={m.rate} />
-                        </td>
-                        <td className="trend-column">
-                          <Spark
-                            points={m.spark}
-                            positive={(delta || 0) >= 0}
-                          />
-                        </td>
-                        <td className="date-column">
-                          <span className="data-date">
-                            {m.latest?.date?.slice(5) || "—"}
-                          </span>
-                          <Status metric={m} />
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-              {dashboard.isPending && (
-                <div className="table-empty" role="status">
-                  <RefreshCw className="spin" size={20} />
-                  正在读取市场档案…
-                </div>
-              )}
-              {!dashboard.isPending && shown.length === 0 && (
-                <div className="table-empty">
-                  <Search size={22} />
-                  <strong>
-                    {watchOnly ? "没有符合条件的关注指标" : "没有匹配的指标"}
-                  </strong>
-                  <span>试试其他关键词或市场分类。</span>
-                  <button
-                    className="button"
-                    onClick={() => {
-                      setSearch("");
-                      setCategory("全部市场");
-                      setWatchOnly(false);
-                    }}
-                  >
-                    重置筛选
-                  </button>
-                </div>
-              )}
-            </div>
-            <div className="table-foot">
-              <span>点击指标，查看历史与来源</span>
-              <span>日变化：% / 利率：bp</span>
-            </div>
-          </section>
-          <aside
-            id="metric-detail"
-            tabIndex={-1}
-            className="detail-panel"
-            aria-label="指标历史详情"
-          >
-            {active ? (
-              <Detail
-                key={active.id}
-                metric={active}
-                onFavorite={() => toggleFavorite(active.id)}
-                favorite={favorites.includes(active.id)}
-              />
-            ) : (
-              <div className="detail-placeholder">
-                <Activity size={30} />
-                <h2>每一次变化，都有迹可循。</h2>
-                <p>选中一个指标，展开历史记录。</p>
               </div>
-            )}
-          </aside>
+              <div className="metric-cards">
+                {group.shown.map((m) => (
+                  <MarketCard
+                    key={m.id}
+                    metric={m}
+                    favorite={favorites.includes(m.id)}
+                    onFavorite={() => toggleFavorite(m.id)}
+                    onOpen={() => setSelected(m.id)}
+                  />
+                ))}
+              </div>
+            </section>
+          ))}
         </div>
+        {!visibleGroups.length && (
+          <div className="table-empty">
+            <Search size={22} />
+            <strong>
+              {watchOnly ? "没有匹配的关注指标" : "没有匹配的指标"}
+            </strong>
+            <button
+              className="button"
+              onClick={() => {
+                setSearch("");
+                setWatchOnly(false);
+              }}
+            >
+              重置筛选
+            </button>
+          </div>
+        )}
         <footer className="footer">
           <span>
             <span className={`health-dot ${failures ? "warning" : ""}`} />
-            {ready}/{all.length || 25} 项有历史数据
+            {ready}/{all.length} 项有历史数据
             {failures ? ` · ${failures} 项采集异常` : ""}
-            {delayed ? ` · ${delayed} 项较早数据` : ""}
           </span>
           <span>
-            来源可追溯 · 历史可回看
-            <span className="footer-end">Economic Dashboard / v0.1</span>
+            日频 · 最近采集 {timeLabel(run?.finishedAt || run?.startedAt)}
           </span>
         </footer>
       </main>
+      {active && (
+        <DetailDrawer
+          metric={active}
+          favorite={favorites.includes(active.id)}
+          onFavorite={() => toggleFavorite(active.id)}
+          onClose={() => setSelected(null)}
+        />
+      )}
     </div>
   );
 }
+function MarketCard({
+  metric,
+  favorite,
+  onFavorite,
+  onOpen,
+}: {
+  metric: Summary;
+  favorite: boolean;
+  onFavorite: () => void;
+  onOpen: () => void;
+}) {
+  const delta = change(
+    metric.latest?.value,
+    metric.previous?.value,
+    metric.rate,
+  );
+  return (
+    <article className={`market-card ${metric.error ? "has-error" : ""}`}>
+      <button
+        className="card-open"
+        onClick={onOpen}
+        aria-label={`查看${metric.name}详情`}
+        aria-haspopup="dialog"
+      >
+        <span className="card-name">{metric.name}</span>
+        <span className="card-quote">
+          <strong>{formatValue(metric.latest?.value, metric.precision)}</strong>
+          <small>{metric.unit}</small>
+        </span>
+        <span className="card-trend">
+          <Delta value={delta} rate={metric.rate} />
+          <Spark points={metric.spark} positive={(delta || 0) >= 0} />
+        </span>
+        <span className="card-meta">
+          <span>
+            {metric.latest?.date || "待采集"}
+            {metric.group === "加密货币" ? " UTC" : ""}
+          </span>
+          <Status metric={metric} />
+        </span>
+      </button>
+      <div className="card-actions">
+        <InfoTip
+          label={`${metric.name}来源与口径`}
+          text={`${metric.source}\n${metric.note}`}
+        />
+        <button
+          className={`icon-button favorite ${favorite ? "saved" : ""}`}
+          aria-label={`${favorite ? "取消关注" : "关注"}${metric.name}`}
+          aria-pressed={favorite}
+          onClick={onFavorite}
+        >
+          <Star size={12} fill={favorite ? "currentColor" : "none"} />
+        </button>
+      </div>
+    </article>
+  );
+}
+function DetailDrawer({
+  metric,
+  favorite,
+  onFavorite,
+  onClose,
+}: {
+  metric: Summary;
+  favorite: boolean;
+  onFavorite: () => void;
+  onClose: () => void;
+}) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const element = dialog.current!;
+    const overflow = document.body.style.overflow;
+    element.showModal();
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = overflow;
+    };
+  }, []);
+  return (
+    <dialog
+      ref={dialog}
+      className="detail-drawer"
+      aria-labelledby="drawer-title"
+      onClose={onClose}
+      onClick={(event) => {
+        if (event.target !== event.currentTarget) return;
+        const rect = event.currentTarget.getBoundingClientRect();
+        if (
+          event.clientX < rect.left ||
+          event.clientX > rect.right ||
+          event.clientY < rect.top ||
+          event.clientY > rect.bottom
+        )
+          event.currentTarget.close();
+      }}
+    >
+      <div className="drawer-toolbar">
+        <span id="drawer-title">{metric.group} / 历史详情</span>
+        <button
+          autoFocus
+          className="icon-button"
+          aria-label="关闭详情"
+          title="关闭详情 · Esc"
+          onClick={() => dialog.current?.close()}
+        >
+          <X size={20} />
+        </button>
+      </div>
+      <div className="drawer-scroll">
+        <Detail
+          key={metric.id}
+          metric={metric}
+          favorite={favorite}
+          onFavorite={onFavorite}
+        />
+      </div>
+    </dialog>
+  );
+}
+
 function Detail({
   metric,
   favorite,
@@ -628,14 +655,30 @@ function Detail({
             {metric.code}
           </span>
         </div>
-        <button
-          className={`icon-button favorite ${favorite ? "saved" : ""}`}
-          aria-label={favorite ? "取消关注当前指标" : "关注当前指标"}
-          aria-pressed={favorite}
-          onClick={onFavorite}
-        >
-          <Star size={18} fill={favorite ? "currentColor" : "none"} />
-        </button>
+        <div className="detail-actions">
+          <InfoTip
+            label="数据来源与统计口径"
+            text={`${metric.source}\n${metric.note}\n观测日：${metric.latest?.date || "待采集"} · 单位：${metric.unit}\n最近成功：${timeLabel(metric.lastSuccess)}\n历史始于：${metric.firstDate || "尚未采集"}`}
+          />
+          <a
+            className="icon-button"
+            href={metric.sourceUrl}
+            target="_blank"
+            rel="noreferrer"
+            aria-label="打开原始数据来源"
+            title="打开原始数据来源"
+          >
+            <ExternalLink size={14} />
+          </a>
+          <button
+            className={`icon-button favorite ${favorite ? "saved" : ""}`}
+            aria-label={favorite ? "取消关注当前指标" : "关注当前指标"}
+            aria-pressed={favorite}
+            onClick={onFavorite}
+          >
+            <Star size={18} fill={favorite ? "currentColor" : "none"} />
+          </button>
+        </div>
       </div>
       <div className="detail-value">
         <strong>{formatValue(metric.latest?.value, metric.precision)}</strong>
@@ -757,59 +800,52 @@ function Detail({
           </b>
         </div>
       </div>
-      <div className="volume-line">
-        <span>
-          源成交量 <small>{metric.volumeUnit || "单位 / 统计范围未核实"}</small>
-        </span>
-        <b>{compact(metric.latest?.volume)}</b>
-      </div>
-      {metric.volumeUnit && volumePoints.length >= 21 && (
+      {metric.marketActivity ||
+      (metric.group !== "A股" && metric.latest?.volume != null) ? (
         <div className="volume-line">
-          <span>最新成交 / 前20次均量</span>
-          <b>
-            {formatValue(
-              volumePoints.at(-1)!.volume! /
-                (volumePoints
-                  .slice(-21, -1)
-                  .reduce((n, p) => n + p.volume!, 0) /
-                  20),
-            )}
-            ×
-          </b>
-        </div>
-      )}
-      <div className="provenance">
-        <div className="source-heading">
           <span>
-            <Database size={13} />
-            数据来源
+            {metric.marketActivity ? "市场成交量" : "源成交量"}{" "}
+            <small>{metric.volumeUnit || "未核实"}</small>
+            <InfoTip
+              label="成交量统计口径"
+              text={
+                metric.marketActivity
+                  ? `${metric.note}\n成交量与成交额分别记录，缺失股数不补零。`
+                  : `单位：${metric.volumeUnit || "尚未核实"}。源成交量不视为全市场成交量。`
+              }
+            />
           </span>
-          <a href={metric.sourceUrl} target="_blank" rel="noreferrer">
-            {metric.source}
-            <ExternalLink size={12} />
-          </a>
+          <b>{compact(metric.latest?.volume)}</b>
         </div>
-        <p>{metric.note}</p>
-        <div className="source-meta">
-          <span>
-            观测日 <b>{metric.latest?.date || "—"}</b>
-          </span>
-          <span>
-            留存 <b>{metric.count.toLocaleString()} 条</b>
-          </span>
-        </div>
-        <div className="source-meta">
-          <span>
-            最近成功 <b>{timeLabel(metric.lastSuccess)}</b>
-          </span>
-        </div>
-        {metric.error && (
-          <div className="source-error">
-            <CircleAlert size={14} />
-            {metric.error}；已有历史仍可查看。
+      ) : null}
+      {(metric.group !== "A股" || metric.marketActivity) &&
+        metric.volumeUnit &&
+        volumePoints.length >= 21 && (
+          <div className="volume-line">
+            <span>最新成交 / 前20次均量</span>
+            <b>
+              {formatValue(
+                volumePoints.at(-1)!.volume! /
+                  (volumePoints
+                    .slice(-21, -1)
+                    .reduce((n, p) => n + p.volume!, 0) /
+                    20),
+              )}
+              ×
+            </b>
           </div>
         )}
+      <div className="detail-meta">
+        <span>{metric.latest?.date || "待采集"}</span>
+        <span>{metric.count.toLocaleString()} 条历史</span>
+        <Status metric={metric} />
       </div>
+      {metric.error && (
+        <div className="source-error">
+          <CircleAlert size={14} />
+          {metric.error}
+        </div>
+      )}
       <details className="history-details">
         <summary>
           历史记录与修订{" "}
@@ -817,10 +853,13 @@ function Detail({
             {points.length} 条<ChevronDown size={14} />
           </span>
         </summary>
-        <p className="muted">
-          展示区间内最近20条；完整记录可导出 CSV。累计历史始于{" "}
-          {metric.firstDate || "尚未采集"}。
-        </p>
+        <div className="history-caption">
+          最近20条{" "}
+          <InfoTip
+            label="历史记录说明"
+            text={`展示区间内最近20条，完整记录可导出 CSV。累计历史始于 ${metric.firstDate || "尚未采集"}。`}
+          />
+        </div>
         <div className="history-rows">
           {points
             .slice(-20)
@@ -829,8 +868,12 @@ function Detail({
               <div key={p.date}>
                 <span>{p.date}</span>
                 <b>{formatValue(p.value, metric.precision)}</b>
-                <span title={p.source}>
-                  {p.revisedAt ? "已修订" : p.source}
+                <span className="history-source">
+                  {p.revisedAt ? "已修订" : null}
+                  <InfoTip
+                    label={`${p.date} 数据来源`}
+                    text={`${p.source}\n首次采集：${timeLabel(p.fetchedAt)}${p.revisedAt ? `\n修订：${timeLabel(p.revisedAt)}` : ""}`}
+                  />
                 </span>
               </div>
             ))}

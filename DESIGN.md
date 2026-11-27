@@ -21,7 +21,7 @@ colors:
 typography:
   headline:
     fontFamily: "'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif"
-    fontSize: "26px"
+    fontSize: "20px"
     fontWeight: 600
     letterSpacing: "-0.035em"
   title:
@@ -37,7 +37,18 @@ typography:
     fontSize: "12px"
   metric:
     fontFamily: "'JetBrains Mono Variable', monospace"
-    fontSize: "35px"
+    fontSize: "28px"
+    fontWeight: 500
+    letterSpacing: "-0.04em"
+  card-value:
+    fontFamily: "'JetBrains Mono Variable', monospace"
+    fontSize: "21px"
+    fontWeight: 500
+    lineHeight: 1.2
+    letterSpacing: "-0.04em"
+  drawer-value:
+    fontFamily: "'JetBrains Mono Variable', monospace"
+    fontSize: "32px"
     fontWeight: 500
     letterSpacing: "-0.04em"
   numeric:
@@ -86,8 +97,8 @@ components:
     textColor: "{colors.ink}"
     rounded: "{rounded.search}"
     padding: "0 9px"
-    height: "34px"
-    width: "235px"
+    height: "30px"
+    width: "250px"
   panel:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.ink}"
@@ -97,9 +108,37 @@ components:
     textColor: "{colors.accent}"
     rounded: "{rounded.compact-control}"
     padding: "5px 9px"
-  metric-selected:
-    backgroundColor: "{colors.row-selected}"
+  market-card:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.panel}"
+    padding: "12px"
+  market-card-hover:
+    backgroundColor: "#141e25"
+  group-disclosure:
+    backgroundColor: "transparent"
+    textColor: "{colors.muted}"
+    padding: "4px"
+  detail-drawer:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.ink}"
+    width: "min(600px, 100vw)"
+    height: "100dvh"
+    padding: "0"
+  drawer-content:
+    padding: "20px"
+  refresh-icon:
+    backgroundColor: "transparent"
     textColor: "{colors.accent}"
+    rounded: "{rounded.compact-control}"
+    width: "32px"
+    height: "32px"
+  source-tooltip:
+    backgroundColor: "{colors.raised}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.button}"
+    padding: "12px 14px"
+    width: "min(320px, calc(100vw - 24px))"
 ---
 
 # Design System: Economic Dashboard
@@ -121,7 +160,7 @@ Chinese interface labels use the system CJK fallback beside locally bundled Lati
 
 ### Primary
 
-Lime (`accent`) identifies the primary action, selected categories, favorites, and the history curve. It also supplies keyboard focus indication.
+Lime (`accent`) identifies primary actions, card hover/focus borders, favorites, selected periods, and the history curve. It also supplies keyboard focus indication.
 
 ### Secondary
 
@@ -129,7 +168,7 @@ Rose (`up`) and mint (`down`) encode signed changes in the default Chinese marke
 
 ### Neutral
 
-Charcoal (`bg`) surrounds dark slate panels (`surface`). Raised controls use `raised`; thin dividers use `rule`. Main text uses `ink`, while dates, source notes, and secondary labels use `muted`. Selected rows and benchmarks have distinct subdued green backgrounds.
+Charcoal (`bg`) surrounds dark slate panels (`surface`). Raised controls use `raised`; thin dividers use `rule`. Main text uses `ink`, while dates, source notes, and secondary labels use `muted`. Cards retain the panel material; hover and focus add a slightly lighter slate fill.
 
 **The Signed Change Rule.** Pair rise/fall color with a sign and unit; color alone never carries the meaning.
 
@@ -137,33 +176,35 @@ Charcoal (`bg`) surrounds dark slate panels (`surface`). Raised controls use `ra
 
 Inter Variable is bundled locally for Latin interface text; Chinese follows the declared system fallback stack. JetBrains Mono Variable is bundled locally for measured values, dates, codes, and chart axes. Numeric roles use tabular figures.
 
-The headline, title, body, label, metric, numeric, and axis roles in the frontmatter are the reusable hierarchy. There is no decorative display face. The selected metric title is an intermediate size (20px, weight 550); benchmark values use 25px at ordinary desktop widths. Mobile reduces the headline to 22px, selected metric title to 18px, and primary metric to 32px. Benchmark values range from 20px to 29px across the implemented breakpoints.
+The frontmatter retains the incumbent type hierarchy and adds card-value and drawer-value roles. There is no decorative display face. Card names are 12px at weight 500; card values are 21px, reducing to 18px at 1400px and returning to 20px at 950px and below. Units and card dates are 10px; group names are 13px with 11px counts. The selected metric title is 16px at weight 550. Drawer values are 32px on desktop and 28px on phones; mobile headlines are 18px.
 
-**The Measurement Rule.** Use the mono face for quantities and identifiers; retain the sans-serif stack for descriptive labels. Auxiliary text and chart axes stay at least 12px in the implemented layouts.
+**The Measurement Rule.** Use the mono face for quantities and identifiers; retain the sans-serif stack for descriptive labels. Chart axes and tooltip text stay at 12px; compact card dates and units use 10px without replacing visible values, units, or status text.
 
 ## Layout
 
-The page is centered with a maximum width of 1760px and desktop horizontal padding of 36px. Five benchmark cells share a ruled strip. The workspace uses a table/detail grid of `minmax(0, 1.4fr) minmax(360px, 1fr)`, tightening at 1250px. Panels share edges instead of floating independently.
+The current observation board is centered at a maximum width of 1800px with 20px desktop horizontal padding and 16px top padding. A 52px header precedes a compact title/search/favorites toolbar. Six named groups contain 25 primary cards and nine secondary cards available through group disclosures: A 股 (7 primary, 5 secondary), 美股 / 美元 (4, 1), 港股 (3), 黄金 / 布油 (2, 3), 加密货币 (2), and 利率 / 美债 (7). A-share turnover is an independent card beside the index cards.
 
-At 950px and below the workspace becomes one column. At 600px and below the detail moves above the table, page padding becomes 14px, and benchmarks become horizontally scrollable 150px cells with scroll snapping. Selecting a metric scrolls and focuses the detail; reduced-motion users receive immediate scrolling. The table retains value and change, moves the date beneath the metric code, and removes sparkline and standalone date columns. Horizontal overflow is contained within table and category regions.
+The desktop outer grid has 14 equal columns with 18px gaps. A-share spans the first row; US/dollar and Hong Kong span eight and six columns on the next row; commodities and crypto each span seven columns on the third; rates/Treasuries span the fourth row. Inner grids use seven cards for A-share and rates, four for US/dollar, three for Hong Kong, and two each for commodities and crypto, with 8px gaps. The overview has no duplicate benchmark strip or permanent detail column.
 
-Table rows are normally 58px high, with a bounded scroll region and sticky headings. Common spacing anchors are recorded in the frontmatter; the implementation also uses contextual intermediate values, not a strict universal spacing multiplier.
+At 1400px and below, A-share and rates wrap to four cards per row; card padding becomes 10px and the internal gap 6px. At 950px and below, the outer grid becomes two columns: A-share, US/dollar, Hong Kong and rates span the full width; commodities and crypto remain side by side, with rates on the fifth row. At 600px and below all groups stack, every inner grid uses two columns, group gaps become 16px, page horizontal/top padding becomes 12px, and the toolbar wraps with full-width controls. Mobile cards use 10px padding and 8px internal gaps. Search or favorites filtering gives matching groups full width and uses auto-filled cards with a 185px minimum; phones retain two columns. Search and favorites include secondary metrics without requiring disclosure first.
+
+Selecting a card opens a right-edge native modal drawer, at most 600px wide and the full dynamic viewport height. At phone widths it fills the viewport. Its toolbar remains outside the independently scrolling content; content padding is 20px on desktop and 14px on phones. The modal locks background scrolling and preserves the board beneath the dimmed backdrop. Close, Escape, or a backdrop click dismisses it and returns focus to the invoking card. Common spacing anchors remain in the frontmatter; contextual dimensions supplement that scale.
 
 ## Elevation & Depth
 
-There are no box shadows. Depth is conveyed by surface tones, thin borders, selection fills, and whitespace. The chart's lime fill fades from 14% opacity to transparent; it supports the actual curve without becoming a decorative backdrop.
+Tooltips use a downward soft shadow to separate on-demand notes from the data underneath. Card depth is conveyed by surface tones, thin borders, hover/focus fills, and whitespace. The modal drawer uses a half-opacity black backdrop and a left divider, without a decorative shadow. The chart's lime fill fades from 14% opacity to transparent; it supports the actual curve without becoming a decorative backdrop.
 
 **The Ruled Surface Rule.** Separate data regions with the existing tonal layers and thin rules before adding elevation.
 
 ## Shapes
 
-Panels have restrained rounded corners; controls use smaller radii from the frontmatter. Dividers are one pixel. Active category and benchmark indicators are two pixels. Icons are small stroked SVGs; favorite stars fill only when selected. The rounded status dot is a compact status marker, not a substitute for its text.
+Panels have restrained rounded corners; controls use smaller radii from the frontmatter. Dividers are one pixel. Card hover/focus uses the lime border; the full-height drawer has square viewport edges and a one-pixel left rule. Icons are small stroked SVGs; favorite stars fill only when selected. The rounded status dot is a compact status marker, not a substitute for its text.
 
 ## Components
 
 ### Buttons
 
-Default actions use raised slate, the primary action uses lime with dark text, and ghost actions have transparent backgrounds. Buttons use the same compact radius and padding, with background/color transitions lasting 150ms. Hover changes the surface color; keyboard focus uses a two-pixel lime outline with four-pixel offset. Disabled buttons show reduced opacity and a wait cursor.
+Default actions use raised slate, the primary action uses lime with dark text, and ghost actions have transparent backgrounds. Buttons use the same compact radius and padding, with background/color transitions lasting 150ms. Hover changes the surface color; keyboard focus uses a two-pixel lime outline with four-pixel offset. Disabled buttons show reduced opacity and a wait cursor. Refresh is an icon-only 32px control (36px on phones) with an accessible name. Card information/favorite actions are independent of the open-detail button, at 22×24px on desktop and 26×28px on phones. The information trigger appears on card hover/focus and remains visible on phones.
 
 ### Inputs / Fields
 
@@ -171,11 +212,15 @@ Search is a dark inset field with a thin rule border and compact radius. Focus c
 
 ### Navigation
 
-Category buttons form a horizontally scrollable text row. Active items use lime text and an underline. Period buttons are compact mono labels; the active period has a translucent lime fill. Their pressed states are exposed semantically.
+The board is navigated through six persistent group headings, global search, and the favorites filter. Each group with secondary series has an “其他” disclosure with a count and expanded state; its chevron rotates when expanded. On phones the disclosure has a 32px minimum height. Period buttons inside the drawer remain compact mono labels with a translucent lime active fill.
 
 ### Cards / Containers
 
-The benchmark strip and main workspace use the panel surface, outer rule, and restrained radius. A selected benchmark gains a green fill and bottom lime indicator. The data table marks the current metric with a green row fill and lime name; the favorite control remains an independent action.
+Each compact card has its own panel surface, one-pixel rule border and 10px radius, with no resting shadow. Its main button presents the name, value and unit, signed change beside a 64×20px sparkline, then observation date and exceptional status. Hover or focus-within turns the border lime and lightens the surface over 120ms. Collection errors use an amber border and explicit text. Favorite and source controls sit at the top right without being nested inside the detail-opening button.
+
+### Detail drawer and source tooltips
+
+The drawer is a native modal dialog, named by its group/history toolbar and initially focused on the 36px close control. It reveals over 160ms with opacity and a clipped right-edge reveal. Tooltip Escape dismisses the tooltip before the dialog. Source notes open on hover, keyboard focus or touch; they render outside card clipping and inside the dialog's top layer when applicable, with viewport-bounded positioning and scrolling. Escape, outside tap, resize or scroll dismisses them. The adjacent external-link action in detail opens the original source.
 
 ### History and provenance
 
@@ -188,11 +233,11 @@ Reduced-motion preference disables transitions and the refresh spin. Data change
 ### Do:
 - **Do** align quantities and use explicit units, dates, and signed changes.
 - **Do** use lime consistently for selection, primary action, and chart emphasis.
-- **Do** preserve visible focus and the mobile selection-to-detail behavior.
+- **Do** preserve visible focus, modal dismissal and focus return to the invoking card.
 - **Do** show missing observations and source failures explicitly.
 
 ### Don't:
 - **Don't** imply rise or fall through color alone.
 - **Don't** substitute invented chart points for absent observations.
 - **Don't** add decorative imagery or hero typography to the data workspace.
-- **Don't** hide latest values or changes to make the mobile table fit.
+- **Don't** hide latest values, units, dates or changes to make mobile cards fit.

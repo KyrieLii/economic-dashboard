@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-27T10:15:53.178015+00:00",
+  "generatedAt": "2026-11-27T11:03:05.963615+00:00",
   "title": "Design System: Economic Dashboard",
   "extensions": {
     "colorMeta": {
@@ -237,9 +237,23 @@
       "axis": {
         "displayName": "Chart axis",
         "purpose": "Dated endpoints and numeric ticks at 12px."
+      },
+      "card-value": {
+        "displayName": "Card measurement",
+        "purpose": "Latest observation on the scanning board; 21px wide, 18px at 1400px, 20px at 950px and below."
+      },
+      "drawer-value": {
+        "displayName": "Drawer measurement",
+        "purpose": "Selected series value; 32px desktop and 28px phones."
       }
     },
-    "shadows": [],
+    "shadows": [
+      {
+        "name": "source-tooltip",
+        "value": "0 6px 24px #0006",
+        "purpose": "Separate on-demand source notes from the data beneath."
+      }
+    ],
     "motion": [
       {
         "name": "control-transition",
@@ -252,9 +266,14 @@
         "purpose": "Refresh activity; disabled by reduced-motion preference."
       },
       {
-        "name": "mobile-selection",
-        "value": "smooth",
-        "purpose": "Scroll selected detail into view at 600px and below; instant with reduced motion."
+        "name": "card-transition",
+        "value": "border-color 120ms, background 120ms",
+        "purpose": "Card hover and focus; disabled with reduced motion."
+      },
+      {
+        "name": "drawer-reveal",
+        "value": "160ms ease-out; opacity 0→1; clip-path inset(0 0 0 12%)→inset(0)",
+        "purpose": "Right-edge modal reveal; disabled with reduced motion."
       }
     ],
     "breakpoints": [
@@ -263,18 +282,82 @@
         "value": "1600px"
       },
       {
+        "name": "cards-compact-max",
+        "value": "1400px"
+      },
+      {
         "name": "compact-max",
         "value": "1250px"
       },
       {
-        "name": "stack-max",
+        "name": "groups-stack-max",
         "value": "950px"
       },
       {
         "name": "mobile-max",
         "value": "600px"
       }
-    ]
+    ],
+    "layout": {
+      "container": "max-width:1800px; padding:16px 20px 0",
+      "headerHeight": "52px",
+      "outerGrid": "repeat(14,minmax(0,1fr)); gap:18px",
+      "primaryCards": 25,
+      "secondaryCards": 9,
+      "groups": [
+        {
+          "name": "A 股",
+          "span": 14,
+          "columns": 7,
+          "primary": 7,
+          "secondary": 5
+        },
+        {
+          "name": "美股 / 美元",
+          "span": 8,
+          "columns": 4,
+          "primary": 4,
+          "secondary": 1
+        },
+        {
+          "name": "港股",
+          "span": 6,
+          "columns": 3,
+          "primary": 3,
+          "secondary": 0
+        },
+        {
+          "name": "黄金 / 布油",
+          "span": 7,
+          "columns": 2,
+          "primary": 2,
+          "secondary": 3
+        },
+        {
+          "name": "加密货币",
+          "span": 7,
+          "columns": 2,
+          "primary": 2,
+          "secondary": 0
+        },
+        {
+          "name": "利率 / 美债",
+          "span": 14,
+          "row": 4,
+          "columns": 7,
+          "primary": 7,
+          "secondary": 0
+        }
+      ],
+      "cardGap": "8px",
+      "responsive": {
+        "1400px": "A-share/rates use four columns; card values 18px, names 11px, padding 10px, gap 6px.",
+        "950px": "Two-column outer grid; A-share, US/dollar, Hong Kong and rates span both; commodities/crypto share a row; rates row 5. Values 20px, names 12px.",
+        "600px": "All groups stack; two cards per row; 16px group gaps; 12px page padding; controls wrap; card gap 8px; drawer full width and content padding 14px."
+      },
+      "filtered": "Matching groups span full width; auto-fill cards minmax(185px,1fr), two columns on phones. Search/favorites include secondary metrics.",
+      "drawer": "Native modal; width:min(600px,100vw); height:100dvh; backdrop:#0008; independent vertical content scroll; background scroll locked; focus restored on dismissal."
+    }
   },
   "components": [
     {
@@ -305,16 +388,9 @@
       "name": "Search field",
       "kind": "input",
       "refersTo": "search",
-      "description": "Inset search field; lime enclosing border signals focus.",
+      "description": "Board search includes secondary series; 250px desktop, flexible on phones.",
       "html": "<label class=\"ds-search\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"8\"/><path d=\"m21 21-4.3-4.3\"/></svg><input aria-label=\"搜索指标或代码\" placeholder=\"搜索指标或代码\"/></label>",
-      "css": ".ds-search{display:flex;align-items:center;gap:8px;color:var(--muted,#9aaabd);background:var(--bg,#0b1016);border:1px solid var(--rule,#27323f);border-radius:6px;height:34px;padding:0 9px;width:235px;max-width:100%}.ds-search:focus-within{border-color:var(--accent,#b9ed80)}.ds-search input{font-family:'Inter Variable',-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;font-size:14px;background:none;border:0;outline:0;min-width:0;width:100%;color:var(--ink,#e5edf5);caret-color:var(--accent,#b9ed80)}.ds-search input::placeholder{color:var(--muted,#9aaabd)}"
-    },
-    {
-      "name": "Category navigation",
-      "kind": "nav",
-      "description": "Scrollable text categories with active underline.",
-      "html": "<nav class=\"ds-tabs\" aria-label=\"市场分类\"><button class=\"ds-active\" aria-pressed=\"true\">全部市场</button><button aria-pressed=\"false\">A股</button><button aria-pressed=\"false\">美股</button></nav>",
-      "css": ".ds-tabs{display:flex;gap:20px;padding:0 20px;border-bottom:1px solid var(--rule,#27323f);overflow-x:auto}.ds-tabs button{font-family:'Inter Variable',-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;font-size:14px;padding:0 0 13px;background:transparent;border:0;border-bottom:2px solid transparent;color:var(--muted,#9aaabd);white-space:nowrap;cursor:pointer}.ds-tabs button.ds-active{color:var(--accent,#b9ed80);border-bottom-color:var(--accent,#b9ed80)}.ds-tabs button:hover{color:var(--ink,#e5edf5)}.ds-tabs button:focus-visible{outline:2px solid var(--accent,#b9ed80);outline-offset:4px}"
+      "css": ".ds-search{display:flex;align-items:center;gap:8px;color:var(--muted,#9aaabd);background:var(--bg,#0b1016);border:1px solid var(--rule,#27323f);border-radius:6px;height:30px;padding:0 9px;width:250px;max-width:100%}.ds-search:focus-within{border-color:var(--accent,#b9ed80)}.ds-search input{font-family:'Inter Variable',-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;font-size:14px;background:none;border:0;outline:0;min-width:0;width:100%;color:var(--ink,#e5edf5);caret-color:var(--accent,#b9ed80)}.ds-search input::placeholder{color:var(--muted,#9aaabd)}"
     },
     {
       "name": "Selected period",
@@ -325,20 +401,44 @@
       "css": ".ds-period{border:0;background:#b9ed801a;color:var(--accent,#b9ed80);padding:5px 9px;border-radius:5px;font-size:12px;font-family:\"JetBrains Mono Variable\",monospace;cursor:pointer}.ds-period:hover{background:var(--raised,#17212c)}.ds-period:focus-visible{outline:2px solid var(--accent,#b9ed80);outline-offset:4px}"
     },
     {
-      "name": "Benchmark card",
-      "kind": "card",
-      "refersTo": "panel",
-      "description": "Single benchmark cell; production cells share a divided strip. Preview intentionally uses missing values.",
-      "html": "<div class=\"ds-benchmarks\"><button class=\"ds-benchmark\" aria-pressed=\"true\"><span class=\"ds-name\">沪深300</span><strong class=\"ds-value\">—</strong><span class=\"ds-date\">等待数据</span></button></div>",
-      "css": ".ds-benchmarks{border:1px solid var(--rule,#27323f);border-radius:10px;overflow:hidden;background:var(--surface,#111821)}.ds-benchmark{font-family:'Inter Variable',-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;font-size:14px;display:block;text-align:left;position:relative;padding:17px 22px;border:0;width:100%;background:#18221d;color:var(--ink,#e5edf5);cursor:pointer}.ds-benchmark:after{content:\"\";position:absolute;bottom:0;left:20px;right:20px;height:2px;background:var(--accent,#b9ed80)}.ds-benchmark:hover{background:#18221d}.ds-benchmark:focus-visible{outline:2px solid var(--accent,#b9ed80);outline-offset:4px;outline-offset:-4px}.ds-value{display:block;font-family:\"JetBrains Mono Variable\",monospace;font-size:25px;font-weight:500;letter-spacing:-.04em;margin:13px 0 10px}.ds-date{font-size:12px;color:var(--muted,#9aaabd)}"
+      "name": "Group disclosure",
+      "kind": "nav",
+      "refersTo": "group-disclosure",
+      "description": "Reveal secondary cards within a named market group; count and aria-expanded preserve the current state.",
+      "html": "<div class=\"ds-group\"><h2>A 股 <span>7</span></h2><button aria-expanded=\"false\">其他 5<svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><path d=\"m6 9 6 6 6-6\"/></svg></button></div>",
+      "css": ".ds-group{font-family:'Inter Variable',-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;display:flex;align-items:center;justify-content:space-between;height:24px;color:var(--ink,#e5edf5)}.ds-group h2{font-size:13px;margin:0}.ds-group h2 span{font:400 11px \"JetBrains Mono Variable\",monospace;color:var(--muted,#9aaabd);margin-left:8px}.ds-group button{display:inline-flex;align-items:center;gap:4px;background:none;border:0;color:var(--muted,#9aaabd);font-size:11px;padding:4px;cursor:pointer}.ds-group button:hover{color:var(--accent,#b9ed80)}.ds-group button:focus-visible{outline:2px solid var(--accent,#b9ed80);outline-offset:4px}.ds-group button[aria-expanded=\"true\"] svg{transform:rotate(180deg)}@media(max-width:600px){.ds-group button{min-height:32px;padding:4px 8px}}"
     },
     {
-      "name": "Selected metric row",
+      "name": "Market card",
+      "kind": "card",
+      "refersTo": "market-card",
+      "description": "Compact observation card opens a modal; source and favorite remain independent actions. Missing-value preview avoids synthetic observations.",
+      "html": "<article class=\"ds-card\"><button class=\"ds-card-open\" aria-haspopup=\"dialog\" aria-label=\"查看沪深300详情\"><span class=\"ds-card-name\">沪深300</span><span class=\"ds-card-quote\"><strong>—</strong><small>点</small></span><span class=\"ds-card-change\">—</span><span class=\"ds-card-date\">待采集</span></button><div class=\"ds-card-actions\"><button aria-label=\"沪深300来源与口径\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M12 16v-4m0-4h.01\"/></svg></button><button aria-label=\"关注沪深300\" aria-pressed=\"false\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><path d=\"m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9Z\"/></svg></button></div></article>",
+      "css": ".ds-card{font-family:'Inter Variable',-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;position:relative;min-width:0;background:var(--surface,#111821);color:var(--ink,#e5edf5);border:1px solid var(--rule,#27323f);border-radius:10px;transition:border-color 120ms,background 120ms}.ds-card:hover,.ds-card:focus-within{border-color:var(--accent,#b9ed80);background:#141e25}.ds-card-open{display:flex;flex-direction:column;gap:8px;width:100%;padding:12px;text-align:left;border:0;border-radius:inherit;background:none;color:inherit;cursor:pointer}.ds-card-open:focus-visible{outline:2px solid var(--accent,#b9ed80);outline-offset:4px}.ds-card-name{font-size:12px;font-weight:500;min-height:18px;padding-right:32px}.ds-card-quote{display:flex;align-items:baseline;gap:5px;flex-wrap:wrap}.ds-card-quote strong{font:500 21px/1.2 \"JetBrains Mono Variable\",monospace;letter-spacing:-.04em}.ds-card-quote small,.ds-card-date{font-size:10px;color:var(--muted,#9aaabd)}.ds-card-change{font:12px \"JetBrains Mono Variable\",monospace;color:var(--muted,#9aaabd)}.ds-card-date{font-family:\"JetBrains Mono Variable\",monospace;min-height:14px}.ds-card-actions{display:flex;position:absolute;top:6px;right:6px}.ds-card-actions button{display:inline-flex;align-items:center;justify-content:center;width:22px;height:24px;border:0;border-radius:5px;background:none;color:var(--muted,#9aaabd);cursor:pointer}.ds-card-actions button:hover{background:#ffffff0b;color:var(--ink,#e5edf5)}.ds-card-actions button:focus-visible{outline:2px solid var(--accent,#b9ed80);outline-offset:4px}.ds-card-actions button:first-child{opacity:0}.ds-card:hover .ds-card-actions button:first-child,.ds-card:focus-within .ds-card-actions button:first-child{opacity:1}@media(max-width:1400px){.ds-card-open{padding:10px;gap:6px}.ds-card-quote strong{font-size:18px}.ds-card-name{font-size:11px}}@media(max-width:950px){.ds-card-quote strong{font-size:20px}.ds-card-name{font-size:12px}}@media(max-width:600px){.ds-card-open{gap:8px}.ds-card-actions button{width:26px;height:28px}.ds-card-actions button:first-child{opacity:1}.ds-card-name{padding-right:38px}}@media(prefers-reduced-motion:reduce){.ds-card{transition:none}}"
+    },
+    {
+      "name": "Detail drawer",
       "kind": "custom",
-      "refersTo": "metric-selected",
-      "description": "Aligned table selection with a secondary mono identifier. Preview uses missing values.",
-      "html": "<table class=\"ds-table\"><tbody><tr><td><button class=\"ds-metric\" aria-pressed=\"true\">标普500<span>^GSPC</span></button></td><td class=\"ds-number\">—</td><td class=\"ds-number\">—</td></tr></tbody></table>",
-      "css": ".ds-table{font-family:'Inter Variable',-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;font-size:14px;width:100%;border-collapse:collapse;color:var(--ink,#e5edf5)}.ds-table tr{background:#1b2927}.ds-table td{height:58px;padding:10px;border-bottom:1px solid #202b37}.ds-table tr:hover{background:#1b2927}.ds-metric{font-family:'Inter Variable',-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;font-size:14px;font-weight:500;background:none;border:0;padding:0;color:var(--accent,#b9ed80);text-align:left;cursor:pointer}.ds-metric span{display:block;font-family:\"JetBrains Mono Variable\",monospace;font-size:12px;font-weight:400;margin-top:4px;color:var(--muted,#9aaabd)}.ds-metric:focus-visible{outline:2px solid var(--accent,#b9ed80);outline-offset:4px}.ds-number{text-align:right;font-family:\"JetBrains Mono Variable\",monospace;font-variant-numeric:tabular-nums}"
+      "refersTo": "detail-drawer",
+      "description": "Contained preview of the right-edge modal. Production uses showModal(), viewport height, backdrop, focus return, Escape/close/outside dismissal and independent scrolling.",
+      "html": "<section class=\"ds-drawer\" aria-label=\"历史详情预览\"><div class=\"ds-drawer-toolbar\"><span>A 股 / 历史详情</span><button aria-label=\"关闭详情\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><path d=\"m18 6-12 12M6 6l12 12\"/></svg></button></div><div class=\"ds-drawer-content\"><h2>沪深300</h2><strong>—</strong><span> 点 · 待采集</span><p>历史记录与修订</p></div></section>",
+      "css": ".ds-drawer{font-family:'Inter Variable',-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;width:min(600px,100%);background:var(--surface,#111821);color:var(--ink,#e5edf5);border-left:1px solid var(--rule,#27323f)}.ds-drawer-toolbar{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--rule,#27323f);color:var(--muted,#9aaabd);font-size:12px}.ds-drawer-toolbar button{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border:0;border-radius:5px;background:transparent;color:var(--muted,#9aaabd);cursor:pointer}.ds-drawer-toolbar button:hover{color:var(--ink,#e5edf5);background:#ffffff0b}.ds-drawer-toolbar button:focus-visible{outline:2px solid var(--accent,#b9ed80);outline-offset:4px}.ds-drawer-content{padding:20px;overflow-y:auto;overscroll-behavior:contain}.ds-drawer-content h2{font-size:16px;font-weight:550}.ds-drawer-content strong{font:500 32px \"JetBrains Mono Variable\",monospace}.ds-drawer-content span{font-size:12px;color:var(--muted,#9aaabd)}.ds-drawer-content p{font-size:12px;border-top:1px solid var(--rule,#27323f);padding-top:16px}@media(max-width:600px){.ds-drawer-toolbar{padding:8px 12px}.ds-drawer-content{padding:14px}.ds-drawer-content strong{font-size:28px}}"
+    },
+    {
+      "name": "Refresh icon",
+      "kind": "button",
+      "refersTo": "refresh-icon",
+      "description": "Header refresh is one compact, named icon action; 32px desktop and 36px phone.",
+      "html": "<button class=\"ds-refresh\" aria-label=\"刷新看板\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><path d=\"M20 7v5h-5M4 17v-5h5M6.1 6.1a8 8 0 0 1 13.3 3M4.6 14.9a8 8 0 0 0 13.3 3\"/></svg></button>",
+      "css": ".ds-refresh{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;background:transparent;color:var(--accent,#b9ed80);border:1px solid var(--rule,#27323f);border-radius:5px;cursor:pointer}.ds-refresh:hover{background:var(--raised,#17212c);border-color:var(--accent,#b9ed80)}.ds-refresh:focus-visible{outline:2px solid var(--accent,#b9ed80);outline-offset:4px}.ds-refresh:disabled{opacity:.55;cursor:wait}@media(max-width:600px){.ds-refresh{width:36px;height:36px}}"
+    },
+    {
+      "name": "Source tooltip",
+      "kind": "custom",
+      "refersTo": "source-tooltip",
+      "description": "On-demand source notes, opened by hover/focus/touch. Preview shows the bubble; production portals into the active dialog or document body.",
+      "html": "<div class=\"ds-tooltip\" role=\"tooltip\">来源与统计口径<br>观测日期与单位保持可见；未取得的数据用 — 表示。</div>",
+      "css": ".ds-tooltip{font-family:'Inter Variable',-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;width:min(320px,calc(100vw - 24px));max-width:100%;max-height:calc(100dvh - 24px);overflow-y:auto;padding:12px 14px;border-radius:7px;background:var(--raised,#17212c);color:var(--ink,#e5edf5);box-shadow:0 6px 24px #0006;font-size:12px;line-height:1.7;white-space:pre-line;overflow-wrap:anywhere}"
     }
   ],
   "narrative": {
@@ -357,7 +457,7 @@
       },
       {
         "name": "The Measurement Rule",
-        "body": "Use the mono face for quantities and identifiers; retain the sans-serif stack for descriptive labels. Auxiliary text and chart axes stay at least 12px in the implemented layouts.",
+        "body": "Use the mono face for quantities and identifiers; retain the sans-serif stack for descriptive labels. Chart axes and tooltip text stay at 12px; compact card dates and units use 10px without replacing visible values, units, or status text.",
         "section": "typography"
       },
       {
@@ -369,14 +469,14 @@
     "dos": [
       "**Do** align quantities and use explicit units, dates, and signed changes.",
       "**Do** use lime consistently for selection, primary action, and chart emphasis.",
-      "**Do** preserve visible focus and the mobile selection-to-detail behavior.",
+      "**Do** preserve visible focus, modal dismissal and focus return to the invoking card.",
       "**Do** show missing observations and source failures explicitly."
     ],
     "donts": [
       "**Don't** imply rise or fall through color alone.",
       "**Don't** substitute invented chart points for absent observations.",
       "**Don't** add decorative imagery or hero typography to the data workspace.",
-      "**Don't** hide latest values or changes to make the mobile table fit."
+      "**Don't** hide latest values, units, dates or changes to make mobile cards fit."
     ]
   }
 }
